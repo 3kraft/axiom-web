@@ -1,5 +1,7 @@
 package org.zalando.axiom;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientRequest;
@@ -14,10 +16,15 @@ import org.zalando.axiom.controller.ProductController;
 import org.zalando.axiom.domain.Product;
 import org.zalando.axiom.verticle.WebVerticle;
 
+import java.io.IOException;
+import java.util.List;
+
 @RunWith(VertxUnitRunner.class)
 public class HttpRequestTest {
 
     private Vertx vertx;
+
+    private ObjectMapper mapper = new ObjectMapper();
 
     @Before
     public void setUp() {
@@ -47,16 +54,22 @@ public class HttpRequestTest {
         HttpClientRequest request = client.get(8080, "127.0.0.1", "/v1/products?latitude=1.2&longitude=1.3");
         request.handler(response -> {
             response.bodyHandler(body -> {
-                String stringValue = String.valueOf(body.getByteBuf());
+                try {
+                    List<Product> responseProduct = mapper.readValue(body.toString(), new TypeReference<List<Product>>() {});
+                    context.assertEquals(product, responseProduct.get(0));
+                } catch (IOException e) {
+                    context.fail(e);
+                }
             });
-            context.assertEquals(product, request);
             async.complete();
         });
         request.exceptionHandler(exception -> {
             context.fail(exception.getLocalizedMessage());
             async.complete();
         });
+
         request.end();
+        Thread.sleep(200);
 
     }
 

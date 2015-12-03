@@ -29,6 +29,7 @@ public class WebVerticle extends AbstractVerticle {
             vertx.createHttpServer().requestHandler(requestHandler -> router.accept(requestHandler)).listen(8080);
         } catch (Exception e) {
             e.printStackTrace();
+            throw e;
         }
 
     }
