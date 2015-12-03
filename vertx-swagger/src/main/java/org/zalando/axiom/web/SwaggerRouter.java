@@ -79,7 +79,7 @@ public class SwaggerRouter implements Router {
             final String fullPath = basePath + pathEntry.getKey();
 
             Path path = pathEntry.getValue();
-            Map<String, OperationTarget> operationTargets = null;
+            Map<String, OperationTarget> operationTargets;
             try {
                 operationTargets = getOperationTargets(path);
             } catch (NoSuchMethodException | IllegalAccessException e) {
@@ -91,6 +91,7 @@ public class SwaggerRouter implements Router {
         return this;
     }
 
+    @SuppressWarnings("unchecked")
     private void bindRoutes(final String fullPath, final Map<String, OperationTarget> operationTargets) {
         LOGGER.debug("Binding route to path [{}].", fullPath);
 
@@ -186,7 +187,7 @@ public class SwaggerRouter implements Router {
                             targetMethod.getName(), operation.getOperationId()));
                 }
             } else {
-                throw new UnsupportedOperationException(String.format("Unhandled parameter type [{}].", operationParameter.getClass().getName()));
+                throw new UnsupportedOperationException(String.format("Unhandled parameter type [%s].", operationParameter.getClass().getName()));
             }
         }
     }
@@ -217,9 +218,8 @@ public class SwaggerRouter implements Router {
 
         MethodHandles.Lookup lookup = MethodHandles.lookup();
         MethodHandle methodHandle = lookup.unreflect(targetMethod);
-        MethodHandle adaptedMethodHandle = methodHandle.asType(methodType);
 
-        return adaptedMethodHandle;
+        return methodHandle.asType(methodType);
     }
 
     private Class<?> getParameterType(QueryParameter queryParameter) {
