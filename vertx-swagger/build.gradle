@@ -15,7 +15,6 @@ compileJava {
 jar {
     manifest {
         attributes(
-//                "Name": "Axiom web - vertx swagger bindings",
                 "Implementation-Title": "axiom.web.vertx-swagger",
                 "Implementation-Version": version,
                 "Implementation-Vendor": "Zalando SE"
