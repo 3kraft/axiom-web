@@ -1,0 +1,172 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Parameter test API",
+        "description": "This swagger file tests the parameter types used by the controller",
+        "version": "1.0.0"
+    },
+    "host": "api.zalando.org",
+    "schemes": [
+        "https"
+    ],
+    "basePath": "/v1",
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/string-parameters": {
+            "get": {
+                "operationId": "org.zalando.axiom.web.controller.TypeController.getByString",
+                "parameters": [
+                    {
+                        "name": "parameter",
+                        "in": "query",
+                        "description": "Parameter of the controller",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "An array of some text",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/integer-parameters": {
+            "get": {
+                "operationId": "org.zalando.axiom.web.controller.TypeController.getByInteger",
+                "parameters": [
+                    {
+                        "name": "parameter",
+                        "in": "query",
+                        "description": "Parameter of the controller",
+                        "required": true,
+                        "type": "number",
+                        "format": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "An array of some text",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/long-parameters": {
+            "get": {
+                "operationId": "org.zalando.axiom.web.controller.TypeController.getByLong",
+                "parameters": [
+                    {
+                        "name": "parameter",
+                        "in": "query",
+                        "description": "Parameter of the controller",
+                        "required": true,
+                        "type": "number",
+                        "format": "long"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "An array of some text",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/double-parameters": {
+            "get": {
+                "operationId": "org.zalando.axiom.web.controller.TypeController.getByDouble",
+                "parameters": [
+                    {
+                        "name": "parameter",
+                        "in": "query",
+                        "description": "Parameter of the controller",
+                        "required": true,
+                        "type": "number",
+                        "format": "double"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "An array of some text",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/float-parameters": {
+            "get": {
+                "operationId": "org.zalando.axiom.web.controller.TypeController.getByFloat",
+                "parameters": [
+                    {
+                        "name": "parameter",
+                        "in": "query",
+                        "description": "Parameter of the controller",
+                        "required": true,
+                        "type": "number",
+                        "format": "float"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "An array of some text",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/boolean-parameters": {
+            "get": {
+                "operationId": "org.zalando.axiom.web.controller.TypeController.getByBoolean",
+                "parameters": [
+                    {
+                        "name": "parameter",
+                        "in": "query",
+                        "description": "Parameter of the controller",
+                        "required": true,
+                        "type": "boolean"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "An array of some text",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

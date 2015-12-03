@@ -74,9 +74,11 @@ public class HttpRequestTest {
 
     }
 
-    // TODO no controller with operation id name found
     // TODO no method in controller matching operation id found
     // TODO list query parameters
-    // TODO test getter with one parameter without path param annotation
     // TODO throw exception if one query parameter is missing
+    // TODO support wrapper types
+    // TODO support date, datetime types
+    // TODO check required parameters
+    // TODO type validation: maximum, minimum, pattern, etc.
 }

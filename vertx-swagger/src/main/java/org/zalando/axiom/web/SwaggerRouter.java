@@ -82,7 +82,7 @@ public class SwaggerRouter implements Router {
             Map<String, OperationTarget> operationTargets = null;
             try {
                 operationTargets = getOperationTargets(path);
-            } catch (NoSuchMethodException | IllegalAccessException e){
+            } catch (NoSuchMethodException | IllegalAccessException e) {
                 LOGGER.error("Could not get operation target method!", e);
                 throw new IllegalStateException(e);
             }
@@ -116,6 +116,14 @@ public class SwaggerRouter implements Router {
     private Object castValueToType(String value, Class<?> parameterType) {
         if (parameterType == double.class) {
             return Double.parseDouble(value);
+        } else if (parameterType == int.class) {
+            return Integer.parseInt(value);
+        } else if (parameterType == float.class) {
+            return Float.parseFloat(value);
+        } else if (parameterType == long.class) {
+            return Long.parseLong(value);
+        } else if (parameterType == boolean.class) {
+            return Boolean.parseBoolean(value);
         } else {
             throw new UnsupportedOperationException(String.format("Unhandled type [%s].", parameterType.getName()));
         }
@@ -124,7 +132,7 @@ public class SwaggerRouter implements Router {
     private Map<String, OperationTarget> getOperationTargets(final Path path) throws NoSuchMethodException, IllegalAccessException {
         final Map<String, OperationTarget> results = new HashMap<>();
 
-        for (Map.Entry<io.swagger.models.HttpMethod, Operation> operationMap: path.getOperationMap().entrySet()) {
+        for (Map.Entry<io.swagger.models.HttpMethod, Operation> operationMap : path.getOperationMap().entrySet()) {
             final io.swagger.models.HttpMethod httpMethod = operationMap.getKey();
             final Operation operation = operationMap.getValue();
 
@@ -150,6 +158,7 @@ public class SwaggerRouter implements Router {
             if (targetMethod == null) {
                 throw new IllegalStateException(String.format("Method [%s] in controller [%s] not found", methodName, className));
             }
+            checkMethodParameters(targetMethod, operation);
 
             MethodHandle methodHandle = getMethodHandle(className, methodName, targetMethod, operation);
 
@@ -158,10 +167,36 @@ public class SwaggerRouter implements Router {
         return results;
     }
 
+    private void checkMethodParameters(Method targetMethod, Operation operation) {
+        java.lang.reflect.Parameter[] parameters = targetMethod.getParameters();
+        List<Parameter> operationParameters = operation.getParameters();
+
+        if (parameters.length != operationParameters.size()) {
+            throw new IllegalStateException(String.format("Parameter count of method [%s] does not match to operation parameter count [%s]!",
+                    targetMethod.getName(), operation.getOperationId()));
+        }
+
+        for (int i = 0; i < parameters.length; ++i) {
+            java.lang.reflect.Parameter parameter = parameters[i];
+            Parameter operationParameter = operationParameters.get(i);
+
+            if (operationParameter instanceof QueryParameter) {
+                if (parameter.getType() != getParameterType((QueryParameter) operationParameter)) {
+                    throw new IllegalStateException(String.format("Parameter types in method [%s] are not matching types for operation id [%s].",
+                            targetMethod.getName(), operation.getOperationId()));
+                }
+            } else {
+                throw new UnsupportedOperationException(String.format("Unhandled parameter type [{}].", operationParameter.getClass().getName()));
+            }
+        }
+    }
+
     private MethodHandle getMethodHandle(String className, String methodName, Method targetMethod, Operation operation) throws NoSuchMethodException, IllegalAccessException {
+        LOGGER.debug("Getting method handle for method [{}] in class [{}].", methodName, className);
+
         List<Class<?>> parameterTypes = new LinkedList<>();
         parameterTypes.add(Object.class); // add target type
-        for (Parameter parameter: operation.getParameters()) {
+        for (Parameter parameter : operation.getParameters()) {
             if (parameter instanceof QueryParameter) {
                 QueryParameter queryParameter = (QueryParameter) parameter;
                 parameterTypes.add(getParameterType(queryParameter));
@@ -191,21 +226,32 @@ public class SwaggerRouter implements Router {
         switch (queryParameter.getType()) {
             case "number":
                 switch (queryParameter.getFormat()) {
-                    case "integer": return int.class;
-                    case "long": return long.class;
-                    case "float": return float.class;
-                    case "double": return double.class;
-                    default: return int.class;
+                    case "integer":
+                        return int.class;
+                    case "long":
+                        return long.class;
+                    case "float":
+                        return float.class;
+                    case "double":
+                        return double.class;
+                    default:
+                        return int.class;
                 }
             case "integer":
                 switch (queryParameter.getFormat()) {
-                    case "integer": return int.class;
-                    case "long": return long.class;
-                    default: return int.class;
+                    case "integer":
+                        return int.class;
+                    case "long":
+                        return long.class;
+                    default:
+                        return int.class;
                 }
-            case "string": return String.class;
-            case "boolean": return boolean.class;
-            default: throw new UnsupportedOperationException(String.format("Type [%s] format [%s] not handled.", queryParameter.getType(), queryParameter.getFormat()));
+            case "string":
+                return String.class;
+            case "boolean":
+                return boolean.class;
+            default:
+                throw new UnsupportedOperationException(String.format("Type [%s] format [%s] not handled.", queryParameter.getType(), queryParameter.getFormat()));
         }
     }
 
