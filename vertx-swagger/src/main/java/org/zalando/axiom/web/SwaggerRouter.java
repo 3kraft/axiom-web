@@ -1,4 +1,4 @@
-package org.zalando.axiom;
+package org.zalando.axiom.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.models.Operation;
@@ -15,8 +15,8 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
-import org.zalando.axiom.domain.OperationTarget;
-import org.zalando.axiom.exceptions.LoadException;
+import org.zalando.axiom.web.domain.OperationTarget;
+import org.zalando.axiom.web.exceptions.LoadException;
 
 import java.io.*;
 import java.lang.invoke.MethodHandle;

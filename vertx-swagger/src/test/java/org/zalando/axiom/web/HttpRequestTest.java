@@ -1,4 +1,4 @@
-package org.zalando.axiom;
+package org.zalando.axiom.web;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,9 +12,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.zalando.axiom.controller.ProductController;
-import org.zalando.axiom.domain.Product;
-import org.zalando.axiom.verticle.WebVerticle;
+import org.zalando.axiom.web.controller.ProductController;
+import org.zalando.axiom.web.domain.Product;
+import org.zalando.axiom.web.verticle.WebVerticle;
 
 import java.io.IOException;
 import java.util.List;
@@ -68,13 +68,14 @@ public class HttpRequestTest {
             async.complete();
         });
 
+        Thread.sleep(100);
         request.end();
         Thread.sleep(200);
 
     }
 
     // TODO no controller with operation id name found
-    // TODO no method in controller matchin operation id found
+    // TODO no method in controller matching operation id found
     // TODO list query parameters
     // TODO test getter with one parameter without path param annotation
     // TODO throw exception if one query parameter is missing

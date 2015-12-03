@@ -1,4 +1,4 @@
-package org.zalando.axiom.domain;
+package org.zalando.axiom.web.domain;
 
 import io.swagger.models.HttpMethod;
 import io.swagger.models.Operation;
@@ -6,10 +6,8 @@ import io.swagger.models.Operation;
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class OperationTarget {
 

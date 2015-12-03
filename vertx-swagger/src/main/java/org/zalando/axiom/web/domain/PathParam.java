@@ -1,4 +1,4 @@
-package org.zalando.axiom.domain;
+package org.zalando.axiom.web.domain;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

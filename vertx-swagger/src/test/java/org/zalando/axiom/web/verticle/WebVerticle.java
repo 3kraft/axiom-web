@@ -1,7 +1,7 @@
-package org.zalando.axiom.verticle;
+package org.zalando.axiom.web.verticle;
 
 import io.vertx.core.AbstractVerticle;
-import org.zalando.axiom.SwaggerRouter;
+import org.zalando.axiom.web.SwaggerRouter;
 
 import java.io.InputStream;
 import java.util.Arrays;

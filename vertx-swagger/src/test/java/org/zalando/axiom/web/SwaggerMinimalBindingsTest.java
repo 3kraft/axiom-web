@@ -1,4 +1,4 @@
-package org.zalando.axiom;
+package org.zalando.axiom.web;
 
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -8,7 +8,8 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.zalando.axiom.controller.ProductController;
+import org.zalando.axiom.web.controller.ProductController;
+import org.zalando.axiom.web.SwaggerRouter;
 
 import java.io.InputStream;
 

@@ -1,4 +1,4 @@
-package org.zalando.axiom.exceptions;
+package org.zalando.axiom.web.exceptions;
 
 public class LoadException extends RuntimeException {
 
