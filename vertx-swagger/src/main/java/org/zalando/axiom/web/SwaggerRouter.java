@@ -15,6 +15,8 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.zalando.axiom.web.domain.OperationTarget;
 import org.zalando.axiom.web.exceptions.LoadException;
 
@@ -31,6 +33,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class SwaggerRouter implements Router {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SwaggerRouter.class);
 
     private final Router router;
 
@@ -79,7 +83,8 @@ public class SwaggerRouter implements Router {
             try {
                 operationTargets = getOperationTargets(path);
             } catch (NoSuchMethodException | IllegalAccessException e){
-                throw new IllegalStateException(e); // FIXME
+                LOGGER.error("Could not get operation target method!", e);
+                throw new IllegalStateException(e);
             }
             bindRoutes(fullPath, operationTargets);
         }
@@ -87,6 +92,8 @@ public class SwaggerRouter implements Router {
     }
 
     private void bindRoutes(final String fullPath, final Map<String, OperationTarget> operationTargets) {
+        LOGGER.debug("Binding route to path [{}].", fullPath);
+
         for (OperationTarget operationTarget : operationTargets.values()) {
             router.route(operationTarget.getVertxHttpMethod(), fullPath).handler(routingContext -> {
                 MultiMap params = routingContext.request().params();
@@ -99,8 +106,7 @@ public class SwaggerRouter implements Router {
                     Object o = operationTarget.getTargetMethodHandle().invokeWithArguments(parameters);
                     routingContext.response().end(mapper.writeValueAsString(o));
                 } catch (Throwable throwable) {
-                    // TODO log error
-                    throwable.printStackTrace();
+                    LOGGER.error("Invoking controller method failed!", throwable);
                     routingContext.fail(500);
                 }
             });
