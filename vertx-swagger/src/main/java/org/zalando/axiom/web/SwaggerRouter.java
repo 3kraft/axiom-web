@@ -8,7 +8,6 @@ import io.swagger.models.parameters.Parameter;
 import io.swagger.models.parameters.QueryParameter;
 import io.swagger.parser.Swagger20Parser;
 import io.vertx.core.Handler;
-import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
@@ -19,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zalando.axiom.web.domain.OperationTarget;
 import org.zalando.axiom.web.exceptions.LoadException;
+import org.zalando.axiom.web.handler.GetHandler;
 
 import java.io.*;
 import java.lang.invoke.MethodHandle;
@@ -30,9 +30,10 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
-public class SwaggerRouter implements Router {
+import static org.zalando.axiom.web.util.Types.getParameterType;
+
+public final class SwaggerRouter implements Router {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SwaggerRouter.class);
 
@@ -91,44 +92,23 @@ public class SwaggerRouter implements Router {
         return this;
     }
 
-    @SuppressWarnings("unchecked")
     private void bindRoutes(final String fullPath, final Map<String, OperationTarget> operationTargets) {
         LOGGER.debug("Binding route to path [{}].", fullPath);
 
         for (OperationTarget operationTarget : operationTargets.values()) {
-            router.route(operationTarget.getVertxHttpMethod(), fullPath).handler(routingContext -> {
-                MultiMap params = routingContext.request().params();
-                List parameters = new LinkedList();
-                parameters.add(operationTarget.getTarget());
-                parameters.addAll(params.names().stream().map(name -> castValueToType(params.get(name), operationTarget.getParameterType(name))).collect(Collectors.toList()));
-                // TODO validate parameters according to swagger
-                // TODO invoke exact for get by id
-                try {
-                    Object o = operationTarget.getTargetMethodHandle().invokeWithArguments(parameters);
-                    routingContext.response().end(mapper.writeValueAsString(o));
-                } catch (Throwable throwable) {
-                    LOGGER.error("Invoking controller method failed!", throwable);
-                    routingContext.fail(500);
-                }
-            });
+            Handler<RoutingContext> handler;
+            switch (operationTarget.getVertxHttpMethod()) {
+                case GET:
+                    handler = new GetHandler(operationTarget);
+                    break;
+                default:
+                    throw new UnsupportedOperationException(String.format("Handler for http method [%s] not implemented!", operationTarget.getVertxHttpMethod()));
+
+            }
+            router.route(operationTarget.getVertxHttpMethod(), fullPath).handler(handler);
         }
     }
 
-    private Object castValueToType(String value, Class<?> parameterType) {
-        if (parameterType == double.class) {
-            return Double.parseDouble(value);
-        } else if (parameterType == int.class) {
-            return Integer.parseInt(value);
-        } else if (parameterType == float.class) {
-            return Float.parseFloat(value);
-        } else if (parameterType == long.class) {
-            return Long.parseLong(value);
-        } else if (parameterType == boolean.class) {
-            return Boolean.parseBoolean(value);
-        } else {
-            throw new UnsupportedOperationException(String.format("Unhandled type [%s].", parameterType.getName()));
-        }
-    }
 
     private Map<String, OperationTarget> getOperationTargets(final Path path) throws NoSuchMethodException, IllegalAccessException {
         final Map<String, OperationTarget> results = new HashMap<>();
@@ -220,39 +200,6 @@ public class SwaggerRouter implements Router {
         MethodHandle methodHandle = lookup.unreflect(targetMethod);
 
         return methodHandle.asType(methodType);
-    }
-
-    private Class<?> getParameterType(QueryParameter queryParameter) {
-        switch (queryParameter.getType()) {
-            case "number":
-                switch (queryParameter.getFormat()) {
-                    case "integer":
-                        return int.class;
-                    case "long":
-                        return long.class;
-                    case "float":
-                        return float.class;
-                    case "double":
-                        return double.class;
-                    default:
-                        return int.class;
-                }
-            case "integer":
-                switch (queryParameter.getFormat()) {
-                    case "integer":
-                        return int.class;
-                    case "long":
-                        return long.class;
-                    default:
-                        return int.class;
-                }
-            case "string":
-                return String.class;
-            case "boolean":
-                return boolean.class;
-            default:
-                throw new UnsupportedOperationException(String.format("Type [%s] format [%s] not handled.", queryParameter.getType(), queryParameter.getFormat()));
-        }
     }
 
     @Override
