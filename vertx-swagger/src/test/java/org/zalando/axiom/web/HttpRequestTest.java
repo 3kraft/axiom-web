@@ -68,7 +68,7 @@ public class HttpRequestTest {
             async.complete();
         });
 
-        Thread.sleep(100);
+        Thread.sleep(200);
         request.end();
         Thread.sleep(200);
 
@@ -81,4 +81,5 @@ public class HttpRequestTest {
     // TODO support date, datetime types
     // TODO check required parameters
     // TODO type validation: maximum, minimum, pattern, etc.
+    // TODO expose property naming strategy as option PropertyNamingStrategy
 }

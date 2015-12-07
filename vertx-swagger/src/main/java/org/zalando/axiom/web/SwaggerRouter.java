@@ -1,11 +1,14 @@
 package org.zalando.axiom.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.swagger.models.Model;
 import io.swagger.models.Operation;
 import io.swagger.models.Path;
 import io.swagger.models.Swagger;
+import io.swagger.models.parameters.BodyParameter;
 import io.swagger.models.parameters.Parameter;
 import io.swagger.models.parameters.QueryParameter;
+import io.swagger.models.properties.Property;
 import io.swagger.parser.Swagger20Parser;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -14,16 +17,20 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.BodyHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zalando.axiom.web.domain.OperationTarget;
 import org.zalando.axiom.web.exceptions.LoadException;
 import org.zalando.axiom.web.handler.GetHandler;
+import org.zalando.axiom.web.handler.PostHandler;
+import org.zalando.axiom.web.util.Strings;
 
 import java.io.*;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.util.HashMap;
@@ -31,6 +38,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import static org.zalando.axiom.web.util.Strings.camelToSnailCase;
 import static org.zalando.axiom.web.util.Types.getParameterType;
 
 public final class SwaggerRouter implements Router {
@@ -82,7 +90,7 @@ public final class SwaggerRouter implements Router {
             Path path = pathEntry.getValue();
             Map<String, OperationTarget> operationTargets;
             try {
-                operationTargets = getOperationTargets(path);
+                operationTargets = getOperationTargets(path, swagger.getDefinitions());
             } catch (NoSuchMethodException | IllegalAccessException e) {
                 LOGGER.error("Could not get operation target method!", e);
                 throw new IllegalStateException(e);
@@ -95,11 +103,16 @@ public final class SwaggerRouter implements Router {
     private void bindRoutes(final String fullPath, final Map<String, OperationTarget> operationTargets) {
         LOGGER.debug("Binding route to path [{}].", fullPath);
 
+        router.route().handler(BodyHandler.create());
+
         for (OperationTarget operationTarget : operationTargets.values()) {
             Handler<RoutingContext> handler;
             switch (operationTarget.getVertxHttpMethod()) {
                 case GET:
                     handler = new GetHandler(operationTarget);
+                    break;
+                case POST:
+                    handler = new PostHandler(operationTarget);
                     break;
                 default:
                     throw new UnsupportedOperationException(String.format("Handler for http method [%s] not implemented!", operationTarget.getVertxHttpMethod()));
@@ -110,7 +123,7 @@ public final class SwaggerRouter implements Router {
     }
 
 
-    private Map<String, OperationTarget> getOperationTargets(final Path path) throws NoSuchMethodException, IllegalAccessException {
+    private Map<String, OperationTarget> getOperationTargets(final Path path, Map<String, Model> definitions) throws NoSuchMethodException, IllegalAccessException {
         final Map<String, OperationTarget> results = new HashMap<>();
 
         for (Map.Entry<io.swagger.models.HttpMethod, Operation> operationMap : path.getOperationMap().entrySet()) {
@@ -139,7 +152,7 @@ public final class SwaggerRouter implements Router {
             if (targetMethod == null) {
                 throw new IllegalStateException(String.format("Method [%s] in controller [%s] not found", methodName, className));
             }
-            checkMethodParameters(targetMethod, operation);
+            checkMethodParameters(targetMethod, operation, definitions);
 
             MethodHandle methodHandle = getMethodHandle(className, methodName, targetMethod, operation);
 
@@ -148,7 +161,7 @@ public final class SwaggerRouter implements Router {
         return results;
     }
 
-    private void checkMethodParameters(Method targetMethod, Operation operation) {
+    private void checkMethodParameters(Method targetMethod, Operation operation, Map<String, Model> definitions) {
         java.lang.reflect.Parameter[] parameters = targetMethod.getParameters();
         List<Parameter> operationParameters = operation.getParameters();
 
@@ -162,14 +175,54 @@ public final class SwaggerRouter implements Router {
             Parameter operationParameter = operationParameters.get(i);
 
             if (operationParameter instanceof QueryParameter) {
-                if (parameter.getType() != getParameterType((QueryParameter) operationParameter)) {
+                QueryParameter queryParameter = (QueryParameter) operationParameter;
+
+                if (parameter.getType() != getParameterType(queryParameter.getType(), queryParameter.getFormat())) {
                     throw new IllegalStateException(String.format("Parameter types in method [%s] are not matching types for operation id [%s].",
                             targetMethod.getName(), operation.getOperationId()));
                 }
+            } else if (operationParameter instanceof BodyParameter) {
+                BodyParameter bodyParameter = (BodyParameter) operationParameter;
+                String ref = bodyParameter.getSchema().getReference();
+                Model model = getModel(ref, definitions);
+
+                if (targetMethod.getParameters().length != 1) {
+                    throw new IllegalStateException(String.format("Method [%s] must have exactly one parameter matching [%s]!", targetMethod.getName(), ref));
+                }
+
+                checkFields(parameter, ref, model);
+                // no-op
             } else {
                 throw new UnsupportedOperationException(String.format("Unhandled parameter type [%s].", operationParameter.getClass().getName()));
             }
         }
+    }
+
+    private void checkFields(java.lang.reflect.Parameter parameter, String ref, Model model) {
+        for (Field field : parameter.getType().getDeclaredFields()) {
+            String fieldName = field.getName();
+            Map<String, Property> properties = model.getProperties();
+            Property property = properties.get(convertFieldNameFromJava(fieldName));
+            if (property == null) {
+                throw new IllegalStateException(String.format("Field [%s] not found in model [%s]!", fieldName, ref));
+            }
+                if (field.getType() != getParameterType(property.getType(), property.getFormat())) {
+                    throw new IllegalStateException(String.format(String.format("Type of field [%s] does not match in domain object and model [%s]!", fieldName, ref)));
+                }
+        }
+    }
+
+    private String convertFieldNameFromJava(String fieldName) {
+        return camelToSnailCase(fieldName);
+    }
+
+    private Model getModel(String ref, Map<String, Model> definitions) {
+        final String modelName = ref.substring(ref.lastIndexOf("/") + 1); // sample "#/definitions/Product"
+        Model model = definitions.get(modelName);
+        if (model == null) {
+            throw new IllegalStateException(String.format("Model with name [%s] and ref [%s] not found in swagger definitions!", modelName, ref));
+        }
+        return model;
     }
 
     private MethodHandle getMethodHandle(String className, String methodName, Method targetMethod, Operation operation) throws NoSuchMethodException, IllegalAccessException {
@@ -180,9 +233,11 @@ public final class SwaggerRouter implements Router {
         for (Parameter parameter : operation.getParameters()) {
             if (parameter instanceof QueryParameter) {
                 QueryParameter queryParameter = (QueryParameter) parameter;
-                parameterTypes.add(getParameterType(queryParameter));
+                parameterTypes.add(getParameterType(queryParameter.getType(), queryParameter.getFormat()));
+            } else if (parameter instanceof BodyParameter) {
+                parameterTypes.add(targetMethod.getParameters()[0].getType());
             } else {
-                throw new UnsupportedOperationException("other parameter types still to be implemented"); // FIXME
+                throw new UnsupportedOperationException("other parameter types still to be implemented");
             }
         }
 

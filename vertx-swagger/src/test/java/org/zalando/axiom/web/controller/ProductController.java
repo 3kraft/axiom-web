@@ -7,6 +7,7 @@ import org.zalando.axiom.web.domain.Product;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 public class ProductController {
 
@@ -16,8 +17,13 @@ public class ProductController {
         return products.values();
     }
 
+    public String create(Product product) {
+        return addProduct(product).getId();
+    }
+
     public Product addProduct(Product product) {
-        products.put(product.getProductId(), product);
+        product.setId(UUID.randomUUID().toString());
+        products.put(product.getId(), product);
         return product;
     }
 }

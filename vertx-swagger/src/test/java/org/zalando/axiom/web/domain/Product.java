@@ -2,7 +2,7 @@ package org.zalando.axiom.web.domain;
 
 public class Product {
 
-    private String productId;
+    private String id;
 
     private String description;
 
@@ -12,12 +12,12 @@ public class Product {
 
     private String image;
 
-    public String getProductId() {
-        return productId;
+    public String getId() {
+        return id;
     }
 
-    public void setProductId(String productId) {
-        this.productId = productId;
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String getDescription() {
@@ -59,7 +59,7 @@ public class Product {
 
         Product product = (Product) o;
 
-        if (productId != null ? !productId.equals(product.productId) : product.productId != null) return false;
+        if (id != null ? !id.equals(product.id) : product.id != null) return false;
         if (description != null ? !description.equals(product.description) : product.description != null) return false;
         if (displayName != null ? !displayName.equals(product.displayName) : product.displayName != null) return false;
         if (capacity != null ? !capacity.equals(product.capacity) : product.capacity != null) return false;
@@ -69,7 +69,7 @@ public class Product {
 
     @Override
     public int hashCode() {
-        int result = productId != null ? productId.hashCode() : 0;
+        int result = id != null ? id.hashCode() : 0;
         result = 31 * result + (description != null ? description.hashCode() : 0);
         result = 31 * result + (displayName != null ? displayName.hashCode() : 0);
         result = 31 * result + (capacity != null ? capacity.hashCode() : 0);

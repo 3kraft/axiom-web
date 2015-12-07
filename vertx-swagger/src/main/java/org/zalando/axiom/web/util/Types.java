@@ -1,7 +1,5 @@
 package org.zalando.axiom.web.util;
 
-import io.swagger.models.parameters.QueryParameter;
-
 public final class Types {
 
     private Types() {
@@ -23,10 +21,10 @@ public final class Types {
         }
     }
 
-    public static Class<?> getParameterType(QueryParameter queryParameter) {
-        switch (queryParameter.getType()) {
+    public static Class<?> getParameterType(String type, String format) {
+        switch (type) {
             case "number":
-                switch (queryParameter.getFormat()) {
+                switch (format) {
                     case "integer":
                         return int.class;
                     case "long":
@@ -39,7 +37,7 @@ public final class Types {
                         return int.class;
                 }
             case "integer":
-                switch (queryParameter.getFormat()) {
+                switch (format) {
                     case "integer":
                         return int.class;
                     case "long":
@@ -52,7 +50,7 @@ public final class Types {
             case "boolean":
                 return boolean.class;
             default:
-                throw new UnsupportedOperationException(String.format("Type [%s] format [%s] not handled.", queryParameter.getType(), queryParameter.getFormat()));
+                throw new UnsupportedOperationException(String.format("Type [%s] format [%s] not handled.", type, format));
         }
     }
 }

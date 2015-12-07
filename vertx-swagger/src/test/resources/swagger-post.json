@@ -15,38 +15,27 @@
     ],
     "paths": {
         "/products": {
-            "get": {
+            "post": {
                 "summary": "Product Types",
-                "description": "The Products endpoint returns information about the *Uber* products\noffered at a given location. The response includes the display name\nand other details about each product, and lists the products in the\nproper display order.\n",
-                "operationId": "org.zalando.axiom.web.controller.ProductController.get",
+                "description": "Add products",
+                "operationId": "org.zalando.axiom.web.controller.ProductController.create",
                 "parameters": [
                     {
-                        "name": "latitude",
-                        "in": "query",
-                        "description": "Latitude component of location.",
+                        "name": "product",
+                        "in": "body",
+                        "description": "New product.",
                         "required": true,
-                        "type": "number",
-                        "format": "double"
-                    },
-                    {
-                        "name": "longitude",
-                        "in": "query",
-                        "description": "Longitude component of location.",
-                        "required": true,
-                        "type": "number",
-                        "format": "double"
+                        "schema": {
+                            "$ref": "#/definitions/Product"
+                        }
                     }
                 ],
-                "tags": [
-                    "Products"
-                ],
                 "responses": {
-                    "200": {
-                        "description": "An array of products",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/Product"
+                    "201": {
+                        "description": "Product created",
+                        "headers": {
+                            "Location:": {
+                                "type": "string"
                             }
                         }
                     },
