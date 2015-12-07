@@ -1,4 +1,4 @@
-package org.zalando.axiom.web;
+package org.zalando.axiom.web.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;

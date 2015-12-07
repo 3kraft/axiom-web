@@ -1,4 +1,4 @@
-package org.zalando.axiom.web;
+package org.zalando.axiom.web.handler;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.util.List;
 
 @RunWith(VertxUnitRunner.class)
-public class HttpRequestTest {
+public class GetHandlerTest {
 
     private Vertx vertx;
 
@@ -74,12 +74,4 @@ public class HttpRequestTest {
 
     }
 
-    // TODO no method in controller matching operation id found
-    // TODO list query parameters
-    // TODO throw exception if one query parameter is missing
-    // TODO support wrapper types
-    // TODO support date, datetime types
-    // TODO check required parameters
-    // TODO type validation: maximum, minimum, pattern, etc.
-    // TODO expose property naming strategy as option PropertyNamingStrategy
 }
