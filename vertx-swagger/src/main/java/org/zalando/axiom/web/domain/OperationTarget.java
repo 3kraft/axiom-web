@@ -56,6 +56,14 @@ public class OperationTarget {
         return parametersByName.get(name).getType();
     }
 
+    public Class<?> getParameterTypeFromOnly() {
+        int size = parametersByName.size();
+        if (size != 1) {
+            throw new IllegalStateException(String.format("The count of parameters is not 1 but %d!", size));
+        }
+        return parametersByName.values().iterator().next().getType();
+    }
+
     private Map<String, Parameter> getParametersByName(Parameter[] parameters) {
         Map<String, Parameter> result = new HashMap<>();
 

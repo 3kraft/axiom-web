@@ -16,7 +16,9 @@ public final class Types {
             return Long.parseLong(value);
         } else if (parameterType == boolean.class) {
             return Boolean.parseBoolean(value);
-        } else {
+        } else if (parameterType == String.class) {
+            return value;
+        }  else {
             throw new UnsupportedOperationException(String.format("Unhandled type [%s].", parameterType.getName()));
         }
     }

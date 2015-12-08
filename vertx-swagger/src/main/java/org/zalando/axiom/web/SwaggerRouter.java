@@ -5,9 +5,7 @@ import io.swagger.models.Model;
 import io.swagger.models.Operation;
 import io.swagger.models.Path;
 import io.swagger.models.Swagger;
-import io.swagger.models.parameters.BodyParameter;
-import io.swagger.models.parameters.Parameter;
-import io.swagger.models.parameters.QueryParameter;
+import io.swagger.models.parameters.*;
 import io.swagger.models.properties.Property;
 import io.swagger.parser.Swagger20Parser;
 import io.vertx.core.Handler;
@@ -24,7 +22,6 @@ import org.zalando.axiom.web.domain.OperationTarget;
 import org.zalando.axiom.web.exceptions.LoadException;
 import org.zalando.axiom.web.handler.GetHandler;
 import org.zalando.axiom.web.handler.PostHandler;
-import org.zalando.axiom.web.util.Strings;
 
 import java.io.*;
 import java.lang.invoke.MethodHandle;
@@ -39,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.zalando.axiom.web.util.Strings.camelToSnailCase;
+import static org.zalando.axiom.web.util.Strings.toVertxPathParams;
 import static org.zalando.axiom.web.util.Types.getParameterType;
 
 public final class SwaggerRouter implements Router {
@@ -82,6 +80,8 @@ public final class SwaggerRouter implements Router {
     }
 
     private Router setupRoutes(Swagger swagger) {
+        router.route().handler(BodyHandler.create());
+
         checkPreconditions();
         String basePath = swagger.getBasePath();
         for (Map.Entry<String, Path> pathEntry : swagger.getPaths().entrySet()) {
@@ -103,8 +103,6 @@ public final class SwaggerRouter implements Router {
     private void bindRoutes(final String fullPath, final Map<String, OperationTarget> operationTargets) {
         LOGGER.debug("Binding route to path [{}].", fullPath);
 
-        router.route().handler(BodyHandler.create());
-
         for (OperationTarget operationTarget : operationTargets.values()) {
             Handler<RoutingContext> handler;
             switch (operationTarget.getVertxHttpMethod()) {
@@ -118,7 +116,7 @@ public final class SwaggerRouter implements Router {
                     throw new UnsupportedOperationException(String.format("Handler for http method [%s] not implemented!", operationTarget.getVertxHttpMethod()));
 
             }
-            router.route(operationTarget.getVertxHttpMethod(), fullPath).handler(handler);
+            router.route(operationTarget.getVertxHttpMethod(), toVertxPathParams(fullPath)).handler(handler);
         }
     }
 
@@ -175,12 +173,13 @@ public final class SwaggerRouter implements Router {
             Parameter operationParameter = operationParameters.get(i);
 
             if (operationParameter instanceof QueryParameter) {
-                QueryParameter queryParameter = (QueryParameter) operationParameter;
 
-                if (parameter.getType() != getParameterType(queryParameter.getType(), queryParameter.getFormat())) {
-                    throw new IllegalStateException(String.format("Parameter types in method [%s] are not matching types for operation id [%s].",
-                            targetMethod.getName(), operation.getOperationId()));
-                }
+                checkType(targetMethod.getName(), operation, parameter, (QueryParameter) operationParameter);
+
+            } else if (operationParameter instanceof PathParameter) {
+
+                checkType(targetMethod.getName(), operation, parameter, (PathParameter) operationParameter);
+
             } else if (operationParameter instanceof BodyParameter) {
                 BodyParameter bodyParameter = (BodyParameter) operationParameter;
                 String ref = bodyParameter.getSchema().getReference();
@@ -198,6 +197,13 @@ public final class SwaggerRouter implements Router {
         }
     }
 
+    private void checkType(String targetMethodName, Operation operation, java.lang.reflect.Parameter parameter, AbstractSerializableParameter modelParameter) {
+        if (parameter.getType() != getParameterType(modelParameter.getType(), modelParameter.getFormat())) {
+            throw new IllegalStateException(String.format("Parameter types in method [%s] are not matching types for operation id [%s].",
+                    targetMethodName, operation.getOperationId()));
+        }
+    }
+
     private void checkFields(java.lang.reflect.Parameter parameter, String ref, Model model) {
         for (Field field : parameter.getType().getDeclaredFields()) {
             String fieldName = field.getName();
@@ -206,9 +212,9 @@ public final class SwaggerRouter implements Router {
             if (property == null) {
                 throw new IllegalStateException(String.format("Field [%s] not found in model [%s]!", fieldName, ref));
             }
-                if (field.getType() != getParameterType(property.getType(), property.getFormat())) {
-                    throw new IllegalStateException(String.format(String.format("Type of field [%s] does not match in domain object and model [%s]!", fieldName, ref)));
-                }
+            if (field.getType() != getParameterType(property.getType(), property.getFormat())) {
+                throw new IllegalStateException(String.format("Type of field [%s] does not match in domain object and model [%s]!", fieldName, ref));
+            }
         }
     }
 
@@ -234,6 +240,9 @@ public final class SwaggerRouter implements Router {
             if (parameter instanceof QueryParameter) {
                 QueryParameter queryParameter = (QueryParameter) parameter;
                 parameterTypes.add(getParameterType(queryParameter.getType(), queryParameter.getFormat()));
+            } else if (parameter instanceof PathParameter) {
+                PathParameter pathParameter = (PathParameter) parameter;
+                parameterTypes.add(getParameterType(pathParameter.getType(), pathParameter.getFormat()));
             } else if (parameter instanceof BodyParameter) {
                 parameterTypes.add(targetMethod.getParameters()[0].getType());
             } else {

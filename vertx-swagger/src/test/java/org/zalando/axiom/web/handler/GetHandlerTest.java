@@ -37,7 +37,7 @@ public class GetHandlerTest {
     }
 
     @Test
-    public void testLoading(TestContext context) throws Exception {
+    public void testGet(TestContext context) throws Exception {
         Product product = new Product();
         product.setCapacity("capacity");
         product.setDescription("description");
@@ -71,7 +71,42 @@ public class GetHandlerTest {
         Thread.sleep(200);
         request.end();
         Thread.sleep(200);
-
     }
 
+    @Test
+    public void testGetById(TestContext context) throws Exception {
+        Product product = new Product();
+        product.setCapacity("capacity");
+        product.setDescription("description");
+        product.setDisplayName("product name");
+
+        ProductController controller = new ProductController();
+        String id = controller.addProduct(product).getId();
+
+        Async async = context.async();
+
+        vertx.deployVerticle(new WebVerticle("/swagger-get-by-id.json", controller));
+
+        HttpClient client = vertx.createHttpClient();
+        HttpClientRequest request = client.get(8080, "127.0.0.1", "/v1/products/" + id);
+        request.handler(response -> {
+            response.bodyHandler(body -> {
+                try {
+                    Product responseProduct = mapper.readValue(body.toString(), new TypeReference<Product>() {});
+                    context.assertEquals(product, responseProduct);
+                } catch (IOException e) {
+                    context.fail(e);
+                }
+            });
+            async.complete();
+        });
+        request.exceptionHandler(exception -> {
+            context.fail(exception.getLocalizedMessage());
+            async.complete();
+        });
+
+        Thread.sleep(200);
+        request.end();
+        Thread.sleep(200);
+    }
 }

@@ -32,7 +32,11 @@ public final class GetHandler implements Handler<RoutingContext> {
         MultiMap params = routingContext.request().params();
         List parameters = new LinkedList();
         parameters.add(operationTarget.getTarget());
-        parameters.addAll(params.names().stream().map(name -> castValueToType(params.get(name), operationTarget.getParameterType(name))).collect(Collectors.toList()));
+        if (params.size() == 1) {
+            parameters.add(castValueToType(params.get(params.names().iterator().next()), operationTarget.getParameterTypeFromOnly()));
+        } else {
+            parameters.addAll(params.names().stream().map(name -> castValueToType(params.get(name), operationTarget.getParameterType(name))).collect(Collectors.toList()));
+        }
         // TODO validate parameters according to swagger
         // TODO invoke exact for get by id
         try {

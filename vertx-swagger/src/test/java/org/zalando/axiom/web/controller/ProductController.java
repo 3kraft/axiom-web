@@ -13,6 +13,10 @@ public class ProductController {
 
     private Map<String, Product> products = new HashMap<>();
 
+    public Product getById(String id) {
+        return products.get(id);
+    }
+
     public Collection<Product> get(@PathParam("longitude") double longitude, @PathParam("latitude") double latitude) {
         return products.values();
     }

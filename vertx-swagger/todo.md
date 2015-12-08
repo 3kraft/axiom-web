@@ -1,3 +1,5 @@
+* remove instanceof checks and rely on parameter - in for casting
+* multiple path parameters
 * no method in controller matching operation id found
 * list query parameters
 * throw exception if one query parameter is missing
