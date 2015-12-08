@@ -231,7 +231,7 @@ public final class SwaggerRouter implements Router {
         return model;
     }
 
-    private MethodHandle getMethodHandle(String className, String methodName, Method targetMethod, Operation operation) throws NoSuchMethodException, IllegalAccessException {
+    private MethodHandle getMethodHandle(String className, String methodName, Method targetMethod, Operation operation) throws IllegalAccessException {
         LOGGER.debug("Getting method handle for method [{}] in class [{}].", methodName, className);
 
         List<Class<?>> parameterTypes = new LinkedList<>();

@@ -6,7 +6,7 @@ public final class Strings {
 
     public static String camelToSnailCase(String fieldName) {
         if (fieldName == null) {
-            return fieldName;
+            return null;
         }
 
         StringBuilder result = new StringBuilder(fieldName.length() * 2);
@@ -26,10 +26,10 @@ public final class Strings {
     private static final Pattern SEGMENT_DELIMITER = Pattern.compile("/");
 
     /**
-     * Converts a swagger templated path to a vertx-web templated path. From: /foo/{bar} to: /foo/:bar
+     * Converts a swagger path with templates to the vertx-web template format. From: /foo/{bar} to: /foo/:bar
      *
-     * @param path swagger templated path
-     * @return vertx templated path
+     * @param path swagger path
+     * @return vertx path
      */
     public static String toVertxPathParams(String path) {
         if (path == null || "/".equals(path)) {

@@ -18,15 +18,16 @@ public class WebVerticle extends AbstractVerticle {
         this.controllers = Arrays.asList(controllers);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void start() throws Exception {
         InputStream jsonStream = this.getClass().getResourceAsStream(jsonPath);
 
         try {
             SwaggerRouter router = SwaggerRouter.router(vertx);
-            controllers.forEach(controller -> router.controller(controller));
+            controllers.forEach(router::controller);
             router.setupRoutes(jsonStream);
-            vertx.createHttpServer().requestHandler(requestHandler -> router.accept(requestHandler)).listen(8080);
+            vertx.createHttpServer().requestHandler(router::accept).listen(8080);
         } catch (Exception e) {
             e.printStackTrace();
             throw e;
