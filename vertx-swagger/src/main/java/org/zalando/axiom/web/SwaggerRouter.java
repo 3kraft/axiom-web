@@ -1,6 +1,7 @@
 package org.zalando.axiom.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import io.swagger.models.Model;
 import io.swagger.models.Operation;
 import io.swagger.models.Path;
@@ -35,6 +36,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import static org.zalando.axiom.web.util.Preconditions.checkNotNull;
 import static org.zalando.axiom.web.util.Strings.camelToSnailCase;
 import static org.zalando.axiom.web.util.Strings.toVertxPathParams;
 import static org.zalando.axiom.web.util.Types.getParameterType;
@@ -45,16 +47,35 @@ public final class SwaggerRouter implements Router {
 
     private final Router router;
 
-    private final ObjectMapper mapper = new ObjectMapper();
+    private ObjectMapper mapper;
+
+    private PropertyNamingStrategy propertyNamingStrategy = PropertyNamingStrategy.CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES;
 
     private final Map<String, Object> controllers = new HashMap<>();
 
     private SwaggerRouter(Router router) {
         this.router = router;
+        this.mapper = new ObjectMapper();
+        this.mapper.setPropertyNamingStrategy(
+                this.propertyNamingStrategy);
     }
 
     public static SwaggerRouter router(Vertx vertx) {
         return new SwaggerRouter(Router.router(vertx));
+    }
+
+    public SwaggerRouter propertyNamingStrategy(PropertyNamingStrategy propertyNamingStrategy) {
+        this.propertyNamingStrategy = propertyNamingStrategy;
+        return this;
+    }
+
+    public SwaggerRouter mapper(ObjectMapper mapper) {
+        this.mapper = mapper;
+        return this;
+    }
+
+    public ObjectMapper getMapper() {
+        return this.mapper;
     }
 
     public Router setupRoutes(InputStream jsonStream) {
@@ -107,10 +128,10 @@ public final class SwaggerRouter implements Router {
             Handler<RoutingContext> handler;
             switch (operationTarget.getVertxHttpMethod()) {
                 case GET:
-                    handler = new GetHandler(operationTarget);
+                    handler = new GetHandler(mapper, operationTarget);
                     break;
                 case POST:
-                    handler = new PostHandler(operationTarget);
+                    handler = new PostHandler(mapper, operationTarget);
                     break;
                 default:
                     throw new UnsupportedOperationException(String.format("Handler for http method [%s] not implemented!", operationTarget.getVertxHttpMethod()));
@@ -183,6 +204,7 @@ public final class SwaggerRouter implements Router {
             } else if (operationParameter instanceof BodyParameter) {
                 BodyParameter bodyParameter = (BodyParameter) operationParameter;
                 String ref = bodyParameter.getSchema().getReference();
+
                 Model model = getModel(ref, definitions);
 
                 if (targetMethod.getParameters().length != 1) {
@@ -223,6 +245,9 @@ public final class SwaggerRouter implements Router {
     }
 
     private Model getModel(String ref, Map<String, Model> definitions) {
+        checkNotNull(ref, "[ref] must not be null!");
+        checkNotNull(definitions, "[definitions] must not be null! Check the swagger json file!");
+
         final String modelName = ref.substring(ref.lastIndexOf("/") + 1); // sample "#/definitions/Product"
         Model model = definitions.get(modelName);
         if (model == null) {
@@ -463,7 +488,7 @@ public final class SwaggerRouter implements Router {
 
     private Swagger load(InputStream jsonStream) {
         try (InputStreamReader reader = new InputStreamReader(jsonStream); Reader bufferedReader = new BufferedReader(reader)) {
-            return new Swagger20Parser().read(mapper.readTree(bufferedReader));
+            return new Swagger20Parser().read(new ObjectMapper().readTree(bufferedReader));
         } catch (IOException e) {
             throw new LoadException(e);
         }
@@ -471,7 +496,7 @@ public final class SwaggerRouter implements Router {
 
     private Swagger load(java.nio.file.Path jsonPath) {
         try (Reader reader = Files.newBufferedReader(jsonPath)) {
-            return new Swagger20Parser().read(mapper.readTree(reader));
+            return new Swagger20Parser().read(new ObjectMapper().readTree(reader));
         } catch (IOException e) {
             throw new LoadException(e);
         }

@@ -1,7 +1,6 @@
 package org.zalando.axiom.web.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.ext.web.RoutingContext;
 import org.slf4j.Logger;
@@ -14,16 +13,12 @@ import java.util.stream.Collectors;
 
 import static org.zalando.axiom.web.util.Types.castValueToType;
 
-public final class GetHandler implements Handler<RoutingContext> {
+public final class GetHandler extends AbstractHttpMethodHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GetHandler.class);
 
-    private final ObjectMapper mapper = new ObjectMapper();
-
-    private final OperationTarget operationTarget;
-
-    public GetHandler(OperationTarget operationTarget) {
-        this.operationTarget = operationTarget;
+    public GetHandler(ObjectMapper mapper, OperationTarget operationTarget) {
+        super(mapper, operationTarget);
     }
 
     @SuppressWarnings("unchecked")

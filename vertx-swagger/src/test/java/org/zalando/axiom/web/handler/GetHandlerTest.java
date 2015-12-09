@@ -2,6 +2,7 @@ package org.zalando.axiom.web.handler;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientRequest;
@@ -29,6 +30,7 @@ public class GetHandlerTest {
     @Before
     public void setUp() {
         vertx = Vertx.vertx();
+        this.mapper.setPropertyNamingStrategy(PropertyNamingStrategy.CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES);
     }
 
     @After
@@ -55,7 +57,8 @@ public class GetHandlerTest {
         request.handler(response -> {
             response.bodyHandler(body -> {
                 try {
-                    List<Product> responseProduct = mapper.readValue(body.toString(), new TypeReference<List<Product>>() {});
+                    List<Product> responseProduct = mapper.readValue(body.toString(), new TypeReference<List<Product>>() {
+                    });
                     context.assertEquals(product, responseProduct.get(0));
                 } catch (IOException e) {
                     context.fail(e);
@@ -92,7 +95,8 @@ public class GetHandlerTest {
         request.handler(response -> {
             response.bodyHandler(body -> {
                 try {
-                    Product responseProduct = mapper.readValue(body.toString(), new TypeReference<Product>() {});
+                    Product responseProduct = mapper.readValue(body.toString(), new TypeReference<Product>() {
+                    });
                     context.assertEquals(product, responseProduct);
                 } catch (IOException e) {
                     context.fail(e);

@@ -1,4 +1,5 @@
 * remove instanceof checks and rely on parameter - in for casting
+* check duplicate operation id
 * multiple path parameters
 * no method in controller matching operation id found
 * list query parameters
