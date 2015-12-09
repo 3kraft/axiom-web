@@ -1,5 +1,13 @@
 package org.zalando.axiom.web.util;
 
+import sun.reflect.ConstantPool;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.TypeVariable;
+import java.util.function.Function;
+
 public final class Types {
 
     private Types() {

@@ -2,7 +2,8 @@ package org.zalando.axiom.web.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-import com.google.common.util.concurrent.ExecutionError;
+import com.google.common.base.Function;
+import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientRequest;
@@ -14,9 +15,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.zalando.axiom.web.SwaggerRouter;
 import org.zalando.axiom.web.controller.ProductController;
 import org.zalando.axiom.web.domain.Product;
-import org.zalando.axiom.web.verticle.WebVerticle;
 
 @RunWith(VertxUnitRunner.class)
 public class PostHandlerTest {
@@ -40,15 +41,6 @@ public class PostHandlerTest {
 
     @Test
     public void testPostHandler(TestContext context) throws Exception {
-        testSwaggerDefinition("/swagger-post.json", context);
-    }
-
-    @Test
-    public void testPostHandlerIdFromMethodResultObject(TestContext context) throws Exception {
-        testSwaggerDefinition("/swagger-post-id-from-object.json", context);
-    }
-
-    private void testSwaggerDefinition(String name, TestContext context) throws Exception {
         Product product = new Product();
         product.setCapacity("capacity");
         product.setDescription("description");
@@ -56,7 +48,17 @@ public class PostHandlerTest {
 
         Async async = context.async();
 
-        vertx.deployVerticle(new WebVerticle(name, new ProductController()));
+        ProductController controller = new ProductController();
+        vertx.deployVerticle(new AbstractVerticle() {
+            @Override
+            public void start() throws Exception {
+                SwaggerRouter router = SwaggerRouter.router(vertx)
+                        .bindTo("/v1/products")
+                        .post(controller::create, Product.class)
+                        .doBind();
+                vertx.createHttpServer().requestHandler(router::accept).listen(8080);
+            }
+        });
 
         String uri = "/v1/products";
 

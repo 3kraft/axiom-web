@@ -1,43 +1,46 @@
 package org.zalando.axiom.web.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.vertx.core.MultiMap;
+import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.zalando.axiom.web.domain.OperationTarget;
+import org.zalando.axiom.web.binding.StringFunction;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.function.IntFunction;
+import java.util.function.Supplier;
 
-import static org.zalando.axiom.web.util.Types.castValueToType;
+import static org.zalando.axiom.web.util.HandlerUtils.getOnlyValue;
 
-public final class GetHandler extends AbstractHttpMethodHandler {
+public final class GetHandler implements Handler<RoutingContext> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GetHandler.class);
 
-    public GetHandler(ObjectMapper mapper, OperationTarget operationTarget) {
-        super(mapper, operationTarget);
+    private final ObjectMapper mapper;
+
+    private final Object function;
+
+    public GetHandler(ObjectMapper mapper, Object function) {
+        this.mapper = mapper;
+        this.function = function;
     }
 
-    @SuppressWarnings("unchecked")
-    @Override
     public void handle(RoutingContext routingContext) {
-        MultiMap params = routingContext.request().params();
-        List parameters = new LinkedList();
-        parameters.add(operationTarget.getTarget());
-        if (params.size() == 1) {
-            parameters.add(castValueToType(params.get(params.names().iterator().next()), operationTarget.getParameterTypeFromOnly()));
+        final String param = getOnlyValue(routingContext);
+
+        Object value;
+        if (function instanceof StringFunction) {
+            value = ((StringFunction) function).apply(param);
+        } else if (function instanceof Supplier) {
+            value = ((Supplier) function).get();
+        } else if (function instanceof IntFunction) {
+            value = ((IntFunction) function).apply(Integer.parseInt(param));
         } else {
-            parameters.addAll(params.names().stream().map(name -> castValueToType(params.get(name), operationTarget.getParameterType(name))).collect(Collectors.toList()));
+            throw new UnsupportedOperationException("Controller with this arity is not yet implemented!");
         }
-        // TODO validate parameters according to swagger
-        // TODO invoke exact for get by id
         try {
-            Object o = operationTarget.getTargetMethodHandle().invokeWithArguments(parameters);
-            routingContext.response().end(mapper.writeValueAsString(o));
-        } catch (Throwable throwable) {
+            routingContext.response().end(mapper.writeValueAsString(value));
+        } catch (Exception throwable) {
             LOGGER.error("Invoking controller method failed!", throwable);
             routingContext.fail(500);
         }
