@@ -3,6 +3,8 @@ package org.zalando.axiom.web.handler;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.google.common.base.Function;
+import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientRequest;
@@ -13,11 +15,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.zalando.axiom.web.SwaggerRouter;
 import org.zalando.axiom.web.controller.ProductController;
 import org.zalando.axiom.web.domain.Product;
 import org.zalando.axiom.web.verticle.WebVerticle;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
 @RunWith(VertxUnitRunner.class)
@@ -110,6 +114,68 @@ public class GetHandlerTest {
         });
 
         Thread.sleep(200);
+        request.end();
+        Thread.sleep(200);
+    }
+
+    @Test
+    public void testGetById2(TestContext context) throws Exception {
+        Product product = new Product();
+        product.setCapacity("capacity");
+        product.setDescription("description");
+        product.setDisplayName("product name");
+
+        ProductController controller = new ProductController();
+        String id = controller.addProduct(product).getId();
+
+        Async async = context.async();
+
+        vertx.deployVerticle(
+                new AbstractVerticle() {
+                    @Override
+                    public void start() throws Exception {
+                        InputStream jsonStream = this.getClass().getResourceAsStream("/swagger-get-by-id.json");
+
+                        try {
+                            SwaggerRouter router = SwaggerRouter.router(vertx);
+                            router.bindTo("/v1/products/:id")
+                                    .get(controller::getById)
+                                    .doBind()
+                                  .bindTo("/v2/products/:id")
+                                    .get(controller::getById)
+                                    .doBind();
+
+//                            router.setupRoutes(jsonStream);
+                            vertx.createHttpServer().requestHandler(router::accept).listen(8080);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            throw e;
+                        }
+                    }
+                }
+        );
+
+        HttpClient client = vertx.createHttpClient();
+        HttpClientRequest request = client.get(8080, "127.0.0.1", "/v1/products/" + id);
+        request.handler(response -> {
+            response.bodyHandler(body -> {
+                try {
+                    String bodyAsString = body.toString();
+                    Product responseProduct = mapper.readValue(bodyAsString, new TypeReference<Product>() {
+                    });
+                    context.assertEquals(product, responseProduct);
+                } catch (IOException e) {
+                    context.fail(e);
+                }
+            });
+            async.complete();
+        });
+        request.exceptionHandler(exception -> {
+            context.fail(exception.getLocalizedMessage());
+            async.complete();
+        });
+
+        Thread.sleep(500);
         request.end();
         Thread.sleep(200);
     }

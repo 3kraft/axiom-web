@@ -19,6 +19,7 @@ import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.zalando.axiom.web.binding.DefaultBindingBuilder;
 import org.zalando.axiom.web.domain.OperationTarget;
 import org.zalando.axiom.web.exceptions.LoadException;
 import org.zalando.axiom.web.handler.GetHandler;
@@ -46,12 +47,9 @@ public final class SwaggerRouter implements Router {
     private static final Logger LOGGER = LoggerFactory.getLogger(SwaggerRouter.class);
 
     private final Router router;
-
-    private ObjectMapper mapper;
-
-    private PropertyNamingStrategy propertyNamingStrategy = PropertyNamingStrategy.CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES;
-
     private final Map<String, Object> controllers = new HashMap<>();
+    private ObjectMapper mapper;
+    private PropertyNamingStrategy propertyNamingStrategy = PropertyNamingStrategy.CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES;
 
     private SwaggerRouter(Router router) {
         this.router = router;
@@ -84,6 +82,10 @@ public final class SwaggerRouter implements Router {
 
     public Router setupRoutes(java.nio.file.Path jsonPath) {
         return setupRoutes(load(jsonPath));
+    }
+
+    public DefaultBindingBuilder bindTo(String path) {
+        return new DefaultBindingBuilder(this, path);
     }
 
     public SwaggerRouter controller(Object controller) {
