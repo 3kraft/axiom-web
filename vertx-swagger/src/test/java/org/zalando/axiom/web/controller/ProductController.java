@@ -26,8 +26,14 @@ public class ProductController {
     }
 
     public Product addProduct(Product product) {
-        product.setId(UUID.randomUUID().toString());
+        if (product.getId() == null) {
+            product.setId(UUID.randomUUID().toString());
+        }
         products.put(product.getId(), product);
         return product;
+    }
+
+    public void deleteProduct(String id) {
+        products.remove(id);
     }
 }

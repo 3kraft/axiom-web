@@ -3,10 +3,12 @@ package org.zalando.axiom.web.binding;
 import io.vertx.core.http.HttpMethod;
 import org.zalando.axiom.web.SwaggerRouter;
 import org.zalando.axiom.web.binding.functions.StringFunction;
+import org.zalando.axiom.web.handler.DeleteHandler;
 import org.zalando.axiom.web.handler.GetHandler;
 import org.zalando.axiom.web.handler.GetWithZeroOrOneParameterHandler;
 import org.zalando.axiom.web.handler.PostHandler;
 
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
@@ -45,7 +47,6 @@ public class DefaultBindingBuilder implements BindingBuilder {
         return this;
     }
 
-
     private DefaultBindingBuilder get(Object function) {
         routeConfiguration.addHandler(HttpMethod.GET, new GetWithZeroOrOneParameterHandler(swaggerRouter.getMapper(), function));
         return this;
@@ -53,6 +54,11 @@ public class DefaultBindingBuilder implements BindingBuilder {
 
     public <T, R> DefaultBindingBuilder post(Class<T> paramType, Function<T, R> function) {
         routeConfiguration.addHandler(HttpMethod.POST, new PostHandler<>(swaggerRouter.getMapper(), function, paramType));
+        return this;
+    }
+
+    public DefaultBindingBuilder delete(Consumer<String> function) {
+        routeConfiguration.addHandler(HttpMethod.DELETE, new DeleteHandler(function));
         return this;
     }
 

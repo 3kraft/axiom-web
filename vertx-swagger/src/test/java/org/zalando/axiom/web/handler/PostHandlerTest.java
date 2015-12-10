@@ -2,9 +2,7 @@ package org.zalando.axiom.web.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.ext.unit.Async;
@@ -18,6 +16,11 @@ import org.junit.runner.RunWith;
 import org.zalando.axiom.web.SwaggerRouter;
 import org.zalando.axiom.web.controller.ProductController;
 import org.zalando.axiom.web.domain.Product;
+import org.zalando.axiom.web.util.VertxUtils;
+
+import java.util.function.Supplier;
+
+import static org.zalando.axiom.web.util.Data.product;
 
 @RunWith(VertxUnitRunner.class)
 public class PostHandlerTest {
@@ -41,46 +44,45 @@ public class PostHandlerTest {
 
     @Test
     public void testPostHandler(TestContext context) throws Exception {
-        Product product = new Product();
-        product.setCapacity("capacity");
-        product.setDescription("description");
-        product.setDisplayName("product name");
-
-        Async async = context.async();
-
         ProductController controller = new ProductController();
-        vertx.deployVerticle(new AbstractVerticle() {
-            @Override
-            public void start() throws Exception {
-                Router router = SwaggerRouter.swaggerDefinition("/swagger-post.json")
-                        .bindTo("/products")
+        testPost(context,
+                // @formatter:off
+                () -> SwaggerRouter.swaggerDefinition("/swagger-post.json")
+                    .bindTo("/products")
                         .post(Product.class, controller::create)
                         .doBind()
-                        .router(vertx);
-                vertx.createHttpServer().requestHandler(router::accept).listen(8080);
-            }
-        });
+                    .router(vertx));
+                // @formatter:on);
+    }
 
-        String uri = "/v1/products";
+    @Test
+    public void testPostHandlerIdInResultObject(TestContext context) throws Exception {
+        ProductController controller = new ProductController();
+        testPost(context,
+                // @formatter:off
+                () -> SwaggerRouter.swaggerDefinition("/swagger-post-id-from-object.json")
+                    .bindTo("/products")
+                        .post(Product.class, controller::addProduct)
+                        .doBind()
+                    .router(vertx));
+                // @formatter:on);
+    }
 
-        HttpClient client = vertx.createHttpClient();
-        HttpClientRequest request = client.post(8080, "127.0.0.1", uri, response -> {
+    private <T, R> void testPost(TestContext context, Supplier<Router> routerFactory) throws Exception {
+        Product product = product(0);
+        Async async = context.async();
+        HttpClientRequest request = getHttpClientRequest(context, async);
+        VertxUtils.startHttpServer(vertx, request, mapper.writeValueAsString(product), routerFactory);
+
+    }
+
+    private HttpClientRequest getHttpClientRequest(TestContext context, Async async) {
+        final String uri = "/v1/products";
+        return VertxUtils.setUpPostRequest(vertx, context, async, uri, 201, response -> {
             String location = response.headers().get(HttpHeaders.LOCATION);
             if (!location.startsWith(uri)) {
                 context.fail(String.format("Location [%s] does not match uri [%s].", location, uri));
             }
-            if (response.statusCode() != 201) {
-                context.fail(String.format("Wrong status code [%d] received expected 201!", response.statusCode()));
-            }
-            async.complete();
         });
-        request.exceptionHandler(exception -> {
-            context.fail(exception.getLocalizedMessage());
-            async.complete();
-        });
-
-        Thread.sleep(200);
-        request.end(mapper.writeValueAsString(product));
-        Thread.sleep(200);
     }
 }

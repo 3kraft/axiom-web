@@ -36,6 +36,22 @@
                         }
                     }
                 }
+            },
+            "delete": {
+                "summary": "Product Types",
+                "description": "Deletes one product",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                    }
+                }
             }
         }
     },

@@ -33,7 +33,7 @@ public final class GetWithZeroOrOneParameterHandler implements Handler<RoutingCo
             value = ((Supplier) function).get();
         } else if (function instanceof IntFunction) {
             value = ((IntFunction) function).apply(Integer.parseInt(getOnlyValue(routingContext)));
-        }else {
+        } else {
             throw new UnsupportedOperationException("Controller with this arity is not yet implemented!");
         }
         try {

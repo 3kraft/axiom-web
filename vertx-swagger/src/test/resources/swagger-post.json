@@ -18,7 +18,6 @@
             "post": {
                 "summary": "Product Types",
                 "description": "Add products",
-                "operationId": "org.zalando.axiom.web.controller.ProductController.create",
                 "parameters": [
                     {
                         "name": "product",
