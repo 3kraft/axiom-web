@@ -1,9 +1,7 @@
 package org.zalando.axiom.web.binding;
 
-import org.zalando.axiom.web.SwaggerRouter;
+interface BindingBuilder {
 
-public interface BindingBuilder {
-
-    public SwaggerRouter doBind();
+    BindingBuilderFactory doBind();
 
 }

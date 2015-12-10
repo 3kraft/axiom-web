@@ -13,9 +13,9 @@ import static org.junit.Assert.*;
 @RunWith(Parameterized.class)
 public class CamelToSnailCaseTest {
 
-    private String camel;
+    private final String camel;
 
-    private String snail;
+    private final String snail;
 
     @Parameterized.Parameters
     public static Collection<Object[]> data() {

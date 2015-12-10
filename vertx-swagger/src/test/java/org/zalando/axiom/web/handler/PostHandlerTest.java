@@ -2,7 +2,6 @@ package org.zalando.axiom.web.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-import com.google.common.base.Function;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClient;
@@ -11,6 +10,7 @@ import io.vertx.core.http.HttpHeaders;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import io.vertx.ext.web.Router;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -52,10 +52,11 @@ public class PostHandlerTest {
         vertx.deployVerticle(new AbstractVerticle() {
             @Override
             public void start() throws Exception {
-                SwaggerRouter router = SwaggerRouter.router(vertx)
+                Router router = SwaggerRouter.swaggerDefinition("/swagger-post.json")
                         .bindTo("/v1/products")
                         .post(controller::create, Product.class)
-                        .doBind();
+                        .doBind()
+                        .router(vertx);
                 vertx.createHttpServer().requestHandler(router::accept).listen(8080);
             }
         });

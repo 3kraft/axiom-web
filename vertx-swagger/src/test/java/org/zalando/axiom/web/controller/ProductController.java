@@ -11,7 +11,7 @@ import java.util.UUID;
 
 public class ProductController {
 
-    private Map<String, Product> products = new HashMap<>();
+    private final Map<String, Product> products = new HashMap<>();
 
     public Product getById(String id) {
         return products.get(id);

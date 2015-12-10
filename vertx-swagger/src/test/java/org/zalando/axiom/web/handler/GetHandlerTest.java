@@ -10,16 +10,18 @@ import io.vertx.core.http.HttpClientRequest;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import io.vertx.ext.web.Router;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.zalando.axiom.web.SwaggerRouter;
+import org.zalando.axiom.web.binding.functions.DoubleDoubleFunction;
 import org.zalando.axiom.web.controller.ProductController;
 import org.zalando.axiom.web.domain.Product;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.util.Collection;
 import java.util.List;
 
 @RunWith(VertxUnitRunner.class)
@@ -27,7 +29,7 @@ public class GetHandlerTest {
 
     private Vertx vertx;
 
-    private ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper = new ObjectMapper();
 
     @Before
     public void setUp() {
@@ -55,10 +57,15 @@ public class GetHandlerTest {
         vertx.deployVerticle(new AbstractVerticle() {
             @Override
             public void start() throws Exception {
-                SwaggerRouter.router(vertx)
+                // @formatter:off
+                Router router = SwaggerRouter.swaggerDefinition("/swagger-minimal.json")
                         .bindTo("/v1/products")
-// FIXME                       .get(controller::get)
-                        .doBind();
+                            .get((DoubleDoubleFunction<Collection<Product>>) controller::get)
+                            .doBind()
+                        .router(vertx);
+                // @formatter:on
+
+                vertx.createHttpServer().requestHandler(router::accept).listen(8080);
             }
         });
 
@@ -101,10 +108,14 @@ public class GetHandlerTest {
         vertx.deployVerticle(new AbstractVerticle() {
             @Override
             public void start() throws Exception {
-                SwaggerRouter router = SwaggerRouter.router(vertx)
+                // @formatter:off
+                Router router = SwaggerRouter.swaggerDefinition("/swagger-get-by-id.json")
                         .bindTo("/v1/products/:id")
-                        .get(controller::getById)
-                        .doBind();
+                            .get(controller::getById)
+                            .doBind()
+                        .router(vertx);
+                // @formatter:on
+
                 vertx.createHttpServer().requestHandler(router::accept).listen(8080);
             }
         });
@@ -128,7 +139,7 @@ public class GetHandlerTest {
             async.complete();
         });
 
-        Thread.sleep(200);
+        Thread.sleep(300);
         request.end();
         Thread.sleep(200);
     }
