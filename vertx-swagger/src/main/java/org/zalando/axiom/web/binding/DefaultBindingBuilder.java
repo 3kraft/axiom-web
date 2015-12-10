@@ -10,6 +10,7 @@ import org.zalando.axiom.web.handler.PostHandler;
 
 import java.util.function.Function;
 import java.util.function.IntFunction;
+import java.util.function.Supplier;
 
 public class DefaultBindingBuilder implements BindingBuilder {
 
@@ -23,6 +24,11 @@ public class DefaultBindingBuilder implements BindingBuilder {
         this.bindingBuilderFactory = bindingBuilderFactory;
         this.swaggerRouter = swaggerRouter;
         this.routeConfiguration = new RouteConfiguration(path);
+    }
+
+    public <T> DefaultBindingBuilder get(Supplier<T> function) {
+        get((Object) function);
+        return this;
     }
 
     public <T> DefaultBindingBuilder get(StringFunction<T> function) {
@@ -50,7 +56,7 @@ public class DefaultBindingBuilder implements BindingBuilder {
         return this;
     }
 
-    public <T, R> DefaultBindingBuilder post(Function<T, R> function, Class<T> paramType) {
+    public <T, R> DefaultBindingBuilder post(Class<T> paramType, Function<T, R> function) {
         routeConfiguration.addHandler(HttpMethod.POST, new PostHandler<>(swaggerRouter.getMapper(), function, paramType));
         return this;
     }

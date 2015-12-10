@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import io.swagger.models.Swagger;
 import io.swagger.parser.Swagger20Parser;
 import org.zalando.axiom.web.binding.BindingBuilderFactory;
+import org.zalando.axiom.web.domain.SwaggerRouterConfiguration;
 import org.zalando.axiom.web.exceptions.LoadException;
 
 import java.io.*;
@@ -25,22 +26,27 @@ public final class SwaggerRouter {
     }
 
     public static BindingBuilderFactory swaggerDefinition(String onClassPath) {
+        return swaggerDefinition(onClassPath, null);
+    }
+
+    public static BindingBuilderFactory swaggerDefinition(String onClassPath, SwaggerRouterConfiguration configuration) {
         InputStream jsonStream = SwaggerRouter.class.getResourceAsStream(onClassPath);
 
         SwaggerRouter swaggerRouter = new SwaggerRouter();
+        swaggerRouter.configure(configuration);
         swaggerRouter.swagger = swaggerRouter.load(jsonStream);
 
         return new BindingBuilderFactory(swaggerRouter);
     }
 
-    public SwaggerRouter propertyNamingStrategy(PropertyNamingStrategy propertyNamingStrategy) {
-        this.propertyNamingStrategy = propertyNamingStrategy;
-        return this;
-    }
+    private void configure(SwaggerRouterConfiguration configuration) {
+        if (configuration == null) {
+            return;
+        }
 
-    public SwaggerRouter mapper(ObjectMapper mapper) {
-        this.mapper = mapper;
-        return this;
+        if (configuration.getMapper() != null) {
+            this.mapper = configuration.getMapper();
+        }
     }
 
     public ObjectMapper getMapper() {

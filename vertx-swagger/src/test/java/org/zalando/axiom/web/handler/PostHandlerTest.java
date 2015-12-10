@@ -54,7 +54,7 @@ public class PostHandlerTest {
             public void start() throws Exception {
                 Router router = SwaggerRouter.swaggerDefinition("/swagger-post.json")
                         .bindTo("/v1/products")
-                        .post(controller::create, Product.class)
+                        .post(Product.class, controller::create)
                         .doBind()
                         .router(vertx);
                 vertx.createHttpServer().requestHandler(router::accept).listen(8080);
