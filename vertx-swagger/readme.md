@@ -1,28 +1,22 @@
 # Vertx swagger
 
-This library creates vertx web bindings using the API description in the swagger.json file.
+This library creates vertx web bindings using the API description in the swagger.json (spec v2) file.
 
 ## Usage
 
-1. define the API with the swagger standard
-2. set the operationId as the full class name + the method name. For example:
+Define the bindings and retrieve the router:
 
-    foo.bar.MyController.getFoo
+    Router router = SwaggerRouter.swaggerDefinition("/swagger-minimal.json")
+            .bindTo("/products")
+                .get(ProductParameter.class, controller::get)
+                .doBind()
+            .router(vertx);
 
-3. load the swagger file
-
-    jsonStream = this.getClass().getResourceAsStream("/swagger-minimal.json")
-
-4. add the controllers to the router
-
-    SwaggerRouter router = SwaggerRouter.router(vertx);
-    router.controller(new MyController())
-          .controller(new MyControllerNG());
-    router.setupRoutes(jsonStream);
-
-5. start vertx with the router
+Then use the router to start an http server:
 
     vertx.createHttpServer().requestHandler(requestHandler -> router.accept(requestHandler)).listen(8080);
+
+The returned router is a normal vertx router, so it can be used to bind additional controllers to paths.
 
 # License
 
