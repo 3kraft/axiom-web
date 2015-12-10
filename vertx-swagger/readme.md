@@ -18,6 +18,9 @@ Then use the router to start an http server:
 
 The returned router is a normal vertx router, so it can be used to bind additional controllers to paths.
 
+_Note:_ The API base path is taken from the swagger definition file! The bindings should contain only the relative paths
+to the base path.
+
 # License
 
 Copyright 20015 Zalando SE
