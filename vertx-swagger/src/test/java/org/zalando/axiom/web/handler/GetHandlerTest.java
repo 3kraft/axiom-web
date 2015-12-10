@@ -16,12 +16,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.zalando.axiom.web.SwaggerRouter;
-import org.zalando.axiom.web.binding.functions.DoubleDoubleFunction;
 import org.zalando.axiom.web.controller.ProductController;
 import org.zalando.axiom.web.domain.Product;
+import org.zalando.axiom.web.domain.ProductParameter;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.List;
 
 @RunWith(VertxUnitRunner.class)
@@ -59,8 +58,8 @@ public class GetHandlerTest {
             public void start() throws Exception {
                 // @formatter:off
                 Router router = SwaggerRouter.swaggerDefinition("/swagger-minimal.json")
-                        .bindTo("/v1/products")
-                            .get((DoubleDoubleFunction<Collection<Product>>) controller::get)
+                        .bindTo("/products")
+                            .get(ProductParameter.class, controller::get)
                             .doBind()
                         .router(vertx);
                 // @formatter:on
@@ -72,6 +71,10 @@ public class GetHandlerTest {
         HttpClient client = vertx.createHttpClient();
         HttpClientRequest request = client.get(8080, "127.0.0.1", "/v1/products?latitude=1.2&longitude=1.3");
         request.handler(response -> {
+            if (response.statusCode() != 200) {
+                context.fail(String.format("Status code is [%d]", response.statusCode()));
+                async.complete();
+            }
             response.bodyHandler(body -> {
                 try {
                     List<Product> responseProduct = mapper.readValue(body.toString(), new TypeReference<List<Product>>() {
@@ -110,7 +113,7 @@ public class GetHandlerTest {
             public void start() throws Exception {
                 // @formatter:off
                 Router router = SwaggerRouter.swaggerDefinition("/swagger-get-by-id.json")
-                        .bindTo("/v1/products/:id")
+                        .bindTo("/products/:id")
                             .get(controller::getById)
                             .doBind()
                         .router(vertx);

@@ -2,7 +2,24 @@ package org.zalando.axiom.web.util;
 
 import java.util.regex.Pattern;
 
+import static org.zalando.axiom.web.util.Preconditions.checkNotNull;
+
 public final class Strings {
+
+    private static final Pattern SEGMENT_DELIMITER = Pattern.compile("/");
+
+    public static String getSetterName(String name) {
+        checkNotNull("Name must not be null!", name);
+        if (name.length() == 0) {
+            throw new IllegalArgumentException("Name must not be blank!");
+        }
+        StringBuilder result = new StringBuilder(3);
+        result.append("set").append(name.substring(0, 1).toUpperCase());
+        if (name.length() > 1) {
+            result.append(name.substring(1));
+        }
+        return result.toString();
+    }
 
     public static String camelToSnailCase(String fieldName) {
         if (fieldName == null) {
@@ -22,8 +39,6 @@ public final class Strings {
         }
         return result.toString();
     }
-
-    private static final Pattern SEGMENT_DELIMITER = Pattern.compile("/");
 
     /**
      * Converts a swagger path with templates to the vertx-web template format. From: /foo/{bar} to: /foo/:bar

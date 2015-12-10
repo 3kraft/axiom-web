@@ -2,10 +2,9 @@ package org.zalando.axiom.web.binding;
 
 import io.vertx.core.http.HttpMethod;
 import org.zalando.axiom.web.SwaggerRouter;
-import org.zalando.axiom.web.binding.functions.DoubleDoubleFunction;
-import org.zalando.axiom.web.binding.functions.IntIntFunction;
 import org.zalando.axiom.web.binding.functions.StringFunction;
 import org.zalando.axiom.web.handler.GetHandler;
+import org.zalando.axiom.web.handler.GetWithZeroOrOneParameterHandler;
 import org.zalando.axiom.web.handler.PostHandler;
 
 import java.util.function.Function;
@@ -41,18 +40,14 @@ public class DefaultBindingBuilder implements BindingBuilder {
         return this;
     }
 
-    public <T> DefaultBindingBuilder get(IntIntFunction<T> function) {
-        get((Object) function);
+    public <T, R> DefaultBindingBuilder get(Class<T> paramType, Function<T, R> function) {
+        routeConfiguration.addHandler(HttpMethod.GET, new GetHandler<>(swaggerRouter.getMapper(), function, paramType, swaggerRouter.getSwagger().getPath(routeConfiguration.getPath())));
         return this;
     }
 
-    public <T> DefaultBindingBuilder get(DoubleDoubleFunction<T> function) {
-        get((Object) function);
-        return this;
-    }
 
     private DefaultBindingBuilder get(Object function) {
-        routeConfiguration.addHandler(HttpMethod.GET, new GetHandler(swaggerRouter.getMapper(), function));
+        routeConfiguration.addHandler(HttpMethod.GET, new GetWithZeroOrOneParameterHandler(swaggerRouter.getMapper(), function));
         return this;
     }
 

@@ -53,7 +53,7 @@ public class PostHandlerTest {
             @Override
             public void start() throws Exception {
                 Router router = SwaggerRouter.swaggerDefinition("/swagger-post.json")
-                        .bindTo("/v1/products")
+                        .bindTo("/products")
                         .post(Product.class, controller::create)
                         .doBind()
                         .router(vertx);

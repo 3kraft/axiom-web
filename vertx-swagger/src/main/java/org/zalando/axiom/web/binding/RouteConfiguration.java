@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import static org.zalando.axiom.web.util.Preconditions.checkNotNull;
+
 class RouteConfiguration {
 
     private final String path;
@@ -15,6 +17,7 @@ class RouteConfiguration {
     private final Map<HttpMethod, Handler<RoutingContext>> httpMethodToHandler;
 
     RouteConfiguration(String path) {
+        checkNotNull(path, "Path must not be null!");
         this.path = path;
         this.httpMethodToHandler = new HashMap<>();
     }

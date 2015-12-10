@@ -1,8 +1,8 @@
 package org.zalando.axiom.web.controller;
 
 
-import org.zalando.axiom.web.domain.PathParam;
 import org.zalando.axiom.web.domain.Product;
+import org.zalando.axiom.web.domain.ProductParameter;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -17,7 +17,7 @@ public class ProductController {
         return products.get(id);
     }
 
-    public Collection<Product> get(@PathParam("longitude") double longitude, @PathParam("latitude") double latitude) {
+    public Collection<Product> get(ProductParameter parameter) {
         return products.values();
     }
 
