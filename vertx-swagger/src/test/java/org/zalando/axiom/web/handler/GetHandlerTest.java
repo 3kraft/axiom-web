@@ -51,6 +51,11 @@ public class GetHandlerTest {
         testGetTwoParams(context, "/v1/products/1.2/1.3", "/products/:latitude/:longitude", "/swagger-get-two-path-params.json");
     }
 
+    @Test
+    public void testGetQueryPathParams(TestContext context) throws Exception {
+        testGetTwoParams(context, "/v1/products/1.2?longitude=1.3", "/products/:latitude", "/swagger-get-two-query-path-params.json");
+    }
+
     private void testGetTwoParams(TestContext context, String uriWithParams, String vertxPath, String swaggerJson) {
         ProductController controller = productController(1);
 
