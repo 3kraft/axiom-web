@@ -68,20 +68,21 @@ public class PostHandlerTest {
                 // @formatter:on);
     }
 
-    private <T, R> void testPost(TestContext context, Supplier<Router> routerFactory) throws Exception {
+    private void testPost(TestContext context, Supplier<Router> routerFactory) throws Exception {
         Product product = product(0);
         Async async = context.async();
-        HttpClientRequest request = getHttpClientRequest(context, async);
+        HttpClientRequest request = getHttpClientRequest(context, async, product);
         VertxUtils.startHttpServer(vertx, request, mapper.writeValueAsString(product), routerFactory);
 
     }
 
-    private HttpClientRequest getHttpClientRequest(TestContext context, Async async) {
+    private HttpClientRequest getHttpClientRequest(TestContext context, Async async, Product product) {
         final String uri = "/v1/products";
         return VertxUtils.setUpPostRequest(vertx, context, async, uri, 201, response -> {
             String location = response.headers().get(HttpHeaders.LOCATION);
-            if (!location.startsWith(uri)) {
-                context.fail(String.format("Location [%s] does not match uri [%s].", location, uri));
+            String expectedLocation = uri + "/" + product.getId();
+            if (!location.equals(expectedLocation)) {
+                context.fail(String.format("Location [%s] does not match uri [%s].", location, expectedLocation));
             }
         });
     }
