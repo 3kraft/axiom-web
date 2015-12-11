@@ -43,7 +43,7 @@ public class DefaultBindingBuilder implements BindingBuilder {
     }
 
     public <T, R> DefaultBindingBuilder get(Class<T> paramType, Function<T, R> function) {
-        routeConfiguration.addHandler(HttpMethod.GET, new GetHandler<>(swaggerRouter.getMapper(), function, paramType, swaggerRouter.getSwagger().getPath(routeConfiguration.getPath())));
+        routeConfiguration.addHandler(HttpMethod.GET, new GetHandler<>(swaggerRouter.getMapper(), function, paramType, swaggerRouter.getSwagger().getPath(routeConfiguration.getSwaggerPath())));
         return this;
     }
 

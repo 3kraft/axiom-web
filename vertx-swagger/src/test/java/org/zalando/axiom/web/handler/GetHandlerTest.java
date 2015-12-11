@@ -42,12 +42,21 @@ public class GetHandlerTest {
     }
 
     @Test
-    public void testGet(TestContext context) throws Exception {
+    public void testGetTwoQueryParams(TestContext context) throws Exception {
+        testGetTwoParams(context, "/v1/products?latitude=1.2&longitude=1.3", "/products", "/swagger-get-two-query-params.json");
+    }
+
+    @Test
+    public void testGetTwoPathParams(TestContext context) throws Exception {
+        testGetTwoParams(context, "/v1/products/1.2/1.3", "/products/:latitude/:longitude", "/swagger-get-two-path-params.json");
+    }
+
+    private void testGetTwoParams(TestContext context, String uriWithParams, String vertxPath, String swaggerJson) {
         ProductController controller = productController(1);
 
         Async async = context.async();
 
-        HttpClientRequest request = setUpGetRequest(vertx, context, async, "/v1/products?latitude=1.2&longitude=1.3", 200,
+        HttpClientRequest request = setUpGetRequest(vertx, context, async, uriWithParams, 200,
                 response -> response.bodyHandler(body -> {
                     try {
                         List<Product> responseProduct = mapper.readValue(body.toString(), new TypeReference<List<Product>>() {
@@ -60,14 +69,13 @@ public class GetHandlerTest {
 
         startHttpServer(vertx, request, () -> {
             // @formatter:off
-            return SwaggerRouter.swaggerDefinition("/swagger-minimal.json")
-                    .bindTo("/products")
+            return SwaggerRouter.swaggerDefinition(swaggerJson)
+                    .bindTo(vertxPath)
                         .get(ProductParameter.class, controller::get)
                         .doBind()
                     .router(vertx);
             // @formatter:on
         });
-
     }
 
     @Test

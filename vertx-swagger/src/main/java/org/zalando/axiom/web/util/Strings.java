@@ -1,5 +1,7 @@
 package org.zalando.axiom.web.util;
 
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 import static org.zalando.axiom.web.util.Preconditions.checkNotNull;
@@ -47,19 +49,36 @@ public final class Strings {
      * @return vertx path
      */
     public static String toVertxPathParams(String path) {
+        return pathTransformer(path,
+                segment -> segment.startsWith("{") && segment.endsWith("}"),
+                segment -> ":" + segment.substring(1, segment.length() - 1));
+    }
+
+    /**
+     * Converts a vertx-web path with templates to the swagger path template format. From: /foo/:bar to: /foo/{bar}
+     *
+     * @param path swagger path
+     * @return vertx path
+     */
+    public static String toSwaggerPathParams(String path) {
+        return pathTransformer(path,
+                segment -> segment.startsWith(":"),
+                segment -> "{" + segment.substring(1) + "}");
+    }
+
+    private static String pathTransformer(String path, Predicate<String> txPredicate, Function<String, String> txFunction) {
         if (path == null || "/".equals(path)) {
             return path;
         }
         String[] segments = SEGMENT_DELIMITER.split(path);
-
         StringBuilder result = new StringBuilder(segments.length * 2);
         for (String segment : segments) {
             if ("".equals(segment)) {
                 continue;
             }
             result.append('/');
-            if (segment.startsWith("{") && segment.endsWith("}")) {
-                result.append(':').append(segment.substring(1, segment.length() - 1));
+            if (txPredicate.test(segment)) {
+                result.append(txFunction.apply(segment));
             } else {
                 result.append(segment);
             }

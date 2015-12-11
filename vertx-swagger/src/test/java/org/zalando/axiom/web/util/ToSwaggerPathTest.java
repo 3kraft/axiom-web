@@ -8,10 +8,10 @@ import org.junit.runners.Parameterized;
 import java.util.Arrays;
 import java.util.Collection;
 
-import static org.zalando.axiom.web.util.Strings.toVertxPathParams;
+import static org.zalando.axiom.web.util.Strings.toSwaggerPathParams;
 
 @RunWith(Parameterized.class)
-public class ToVertxPathTest {
+public class ToSwaggerPathTest {
 
     private String swaggerPath;
 
@@ -24,20 +24,20 @@ public class ToVertxPathTest {
                 { "/", "/" },
                 { "/foo/{bar}", "/foo/:bar"},
                 { "/foo/{bar}/quuz/{baz}", "/foo/:bar/quuz/:baz"},
-                { "/foo/{bar}/quuz/:baz", "/foo/:bar/quuz/:baz"},
+                { "/foo/{bar}/quuz/{baz}", "/foo/:bar/quuz/{baz}"},
                 {"", ""},
                 {null, null}
         });
     }
 
-    public ToVertxPathTest(String swaggerPath, String vertxPath) {
+    public ToSwaggerPathTest(String swaggerPath, String vertxPath) {
         this.swaggerPath = swaggerPath;
         this.vertxPath = vertxPath;
     }
 
     @Test
-    public void testToVertxPath() throws Exception {
-        Assert.assertEquals(vertxPath, toVertxPathParams(swaggerPath));
+    public void testToSwaggerPath() throws Exception {
+        Assert.assertEquals(swaggerPath, toSwaggerPathParams(vertxPath));
 
     }
 }
