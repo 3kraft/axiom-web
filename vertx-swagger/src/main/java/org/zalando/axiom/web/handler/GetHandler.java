@@ -19,6 +19,7 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedList;
 import java.util.List;
@@ -79,7 +80,8 @@ public class GetHandler<T, R> implements Handler<RoutingContext> {
         Constructor<?> constructor = getConstructorWithParameterCount(params.names().size(), paramType);
         List<Object> constructorValues = new LinkedList<>();
         Map<String, Parameter> parameters = getParameterMap(path);
-        for (String name : params.names()) {
+        for (Field field : paramType.getDeclaredFields()) {
+            String name = field.getName();
             Class<?> type = getType(name, parameters.get(name));
             constructorValues.add(castValueToType(getSingleValue(name, params), type));
         }
