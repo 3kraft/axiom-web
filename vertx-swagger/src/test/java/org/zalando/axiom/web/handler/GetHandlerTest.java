@@ -16,6 +16,7 @@ import org.zalando.axiom.web.SwaggerRouter;
 import org.zalando.axiom.web.controller.ProductController;
 import org.zalando.axiom.web.domain.Product;
 import org.zalando.axiom.web.domain.ProductParameter;
+import org.zalando.axiom.web.domain.ProductParameterNoDefaultCtx;
 
 import java.io.IOException;
 import java.util.List;
@@ -61,7 +62,21 @@ public class GetHandlerTest {
 
         Async async = context.async();
 
-        HttpClientRequest request = setUpGetRequest(vertx, context, async, uriWithParams, 200,
+        HttpClientRequest request = getHttpClientRequest(context, uriWithParams, controller, async);
+
+        startHttpServer(vertx, request, () -> {
+            // @formatter:off
+            return SwaggerRouter.swaggerDefinition(swaggerJson)
+                    .bindTo(vertxPath)
+                        .get(ProductParameter.class, controller::get)
+                        .doBind()
+                    .router(vertx);
+            // @formatter:on
+        });
+    }
+
+    private HttpClientRequest getHttpClientRequest(TestContext context, String uriWithParams, ProductController controller, Async async) {
+        return setUpGetRequest(vertx, context, async, uriWithParams, 200,
                 response -> response.bodyHandler(body -> {
                     try {
                         List<Product> responseProduct = mapper.readValue(body.toString(), new TypeReference<List<Product>>() {
@@ -71,12 +86,21 @@ public class GetHandlerTest {
                         context.fail(e);
                     }
                 }));
+    }
+
+    @Test
+    public void testGetWithParamObjectWithNoDefaultConstructor(TestContext context) throws Exception {
+        ProductController controller = productController(1);
+
+        Async async = context.async();
+
+        HttpClientRequest request = getHttpClientRequest(context, "/v1/products?latitude=1.2&longitude=1.3", controller, async);
 
         startHttpServer(vertx, request, () -> {
             // @formatter:off
-            return SwaggerRouter.swaggerDefinition(swaggerJson)
-                    .bindTo(vertxPath)
-                        .get(ProductParameter.class, controller::get)
+            return SwaggerRouter.swaggerDefinition("/swagger-get-two-query-params.json")
+                    .bindTo("/products")
+                        .get(ProductParameterNoDefaultCtx.class, controller::get)
                         .doBind()
                     .router(vertx);
             // @formatter:on

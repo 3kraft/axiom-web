@@ -18,6 +18,10 @@ import org.zalando.axiom.web.util.Types;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -53,26 +57,12 @@ public class GetHandler<T, R> implements Handler<RoutingContext> {
     @Override
     public void handle(RoutingContext routingContext) {
         MultiMap params = routingContext.request().params();
+        Object parameter;
         try {
-            Object parameter = paramType.newInstance();
-            MethodHandles.Lookup lookup = MethodHandles.lookup();
-            Map<HttpMethod, Operation> operationMap = path.getOperationMap();
-            Map<String, Parameter> parameters = operationMap.get(HttpMethod.GET).getParameters().stream().collect(
-                    Collectors.toMap(
-                            Parameter::getName,
-                            (Function<Parameter, Parameter>) param -> param));
-
-            for (String name : params.names()) {
-                try {
-                    Class<?> type = getType(name, parameters.get(name));
-                    MethodHandle setter = lookup.findVirtual(paramType, getSetterName(name), MethodType.methodType(void.class, type));
-                    setter.invokeWithArguments(parameter, castValueToType(getSingleValue(name, params), type));
-
-                } catch (NoSuchFieldException e) {
-                    fail(String.format("Could not find setter for field [%s]", name), e, routingContext);
-                } catch (Throwable throwable) {
-                    fail(String.format("Could not invoke setter for field [%s]!", name), throwable, routingContext);
-                }
+            if (hasDefaultConstructor(paramType)) {
+                parameter = fillParameterWithDefaultConstructor(routingContext, paramType, params);
+            } else {
+                parameter = fillParameterWithNonDefaultConstructor(paramType, params);
             }
             R result = function.apply(paramType.cast(parameter));
             try {
@@ -80,9 +70,65 @@ public class GetHandler<T, R> implements Handler<RoutingContext> {
             } catch (JsonProcessingException e) {
                 fail(String.format("Could not serialize result [%s]!", result.getClass().getName()), e, routingContext);
             }
-        } catch (InstantiationException | IllegalAccessException e) {
+        } catch (InvocationTargetException| InstantiationException | IllegalAccessException e) {
             fail("Error occurred on calling controller method!", e, routingContext);
         }
+    }
+
+    private Object fillParameterWithNonDefaultConstructor(Class<T> paramType, MultiMap params) throws InstantiationException, IllegalAccessException, InvocationTargetException {
+        Constructor<?> constructor = getConstructorWithParameterCount(params.names().size(), paramType);
+        List<Object> constructorValues = new LinkedList<>();
+        Map<String, Parameter> parameters = getParameterMap(path);
+        for (String name : params.names()) {
+            Class<?> type = getType(name, parameters.get(name));
+            constructorValues.add(castValueToType(getSingleValue(name, params), type));
+        }
+        return constructor.newInstance(constructorValues.toArray());
+    }
+
+    private Constructor<?> getConstructorWithParameterCount(int size, Class<T> paramType) {
+        for (Constructor<?> constructor : paramType.getConstructors()) {
+            if (constructor.getParameters().length == size) {
+                return constructor;
+            }
+        }
+        throw new IllegalStateException(String.format("Could not find constructor with [%d] arguments for parameter object [%s]!", size, paramType.getName()));
+    }
+
+    private Object fillParameterWithDefaultConstructor(RoutingContext routingContext, Class<T> paramType, MultiMap params) throws InstantiationException, IllegalAccessException {
+        Object parameter = paramType.newInstance();
+        MethodHandles.Lookup lookup = MethodHandles.lookup();
+
+        Map<String, Parameter> parameters = getParameterMap(path);
+        for (String name : params.names()) {
+            try {
+                Class<?> type = getType(name, parameters.get(name));
+                MethodHandle setter = lookup.findVirtual(paramType, getSetterName(name), MethodType.methodType(void.class, type));
+                setter.invokeWithArguments(parameter, castValueToType(getSingleValue(name, params), type));
+            } catch (NoSuchFieldException e) {
+                fail(String.format("Could not find setter for field [%s]", name), e, routingContext);
+            } catch (Throwable throwable) {
+                fail(String.format("Could not invoke setter for field [%s]!", name), throwable, routingContext);
+            }
+        }
+        return parameter;
+    }
+
+    private Map<String, Parameter> getParameterMap(Path path) {
+        Map<HttpMethod, Operation> operationMap = path.getOperationMap();
+        return operationMap.get(HttpMethod.GET).getParameters().stream().collect(
+                Collectors.toMap(
+                        Parameter::getName,
+                        (Function<Parameter, Parameter>) param -> param));
+    }
+
+    private boolean hasDefaultConstructor(Class<T> paramType) {
+        for (Constructor<?> constructor : paramType.getConstructors()) {
+            if (constructor.getParameters().length == 0) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void fail(String message, Throwable throwable, RoutingContext routingContext) {

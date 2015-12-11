@@ -3,6 +3,7 @@ package org.zalando.axiom.web.controller;
 
 import org.zalando.axiom.web.domain.Product;
 import org.zalando.axiom.web.domain.ProductParameter;
+import org.zalando.axiom.web.domain.ProductParameterNoDefaultCtx;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -18,6 +19,10 @@ public class ProductController {
     }
 
     public Collection<Product> get(ProductParameter parameter) {
+        return products.values();
+    }
+
+    public Collection<Product> get(ProductParameterNoDefaultCtx parameter) {
         return products.values();
     }
 
