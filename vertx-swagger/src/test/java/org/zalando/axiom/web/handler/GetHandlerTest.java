@@ -43,6 +43,11 @@ public class GetHandlerTest {
     }
 
     @Test
+    public void testGetTwoQueryParamsWithoutBasePath(TestContext context) throws Exception {
+        testGetTwoParams(context, "/products?latitude=1.2&longitude=1.3", "/products", "/swagger-get-two-query-params-without-base-path.json");
+    }
+
+    @Test
     public void testGetTwoQueryParams(TestContext context) throws Exception {
         testGetTwoParams(context, "/v1/products?latitude=1.2&longitude=1.3", "/products", "/swagger-get-two-query-params.json");
     }

@@ -59,7 +59,7 @@ public final class SwaggerRouter {
         }
 
         if (configuration.isCollectMetrics()) {
-            this.metricsRegistry = new MetricRegistry();
+            this.metricsRegistry = configuration.getMetricRegistry();
         }
 
         return this;

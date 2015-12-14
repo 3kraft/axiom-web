@@ -69,6 +69,14 @@ public final class Strings {
                 segment -> "{" + segment.substring(1) + "}");
     }
 
+    public static boolean isBlank(String string) {
+        return string == null || "".equals(string);
+    }
+
+    public static String valueOrElse(String value, String fallback) {
+        return isBlank(value) ? "" : value;
+    }
+
     private static String pathTransformer(String path, Predicate<String> txPredicate, Function<String, String> txFunction) {
         if (path == null || "/".equals(path)) {
             return path;
