@@ -34,7 +34,7 @@ to the base path.
 
 # License
 
-Copyright 20015 Zalando SE
+Copyright 2015 Zalando SE
 
 http://opensource.org/licenses/MIT
 
