@@ -87,7 +87,7 @@ public class DefaultBindingBuilder implements BindingBuilder {
 
     private <T, R> Handler<RoutingContext> toMetricsHandler(Handler<RoutingContext> handler) {
         if (swaggerRouter.isMetricsEnabled()) {
-            return new MetricsHandler(swaggerRouter.getMetricsRegistry(), handler);
+            return new MetricsHandler(swaggerRouter.getMetricsRegistry(), handler, routeConfiguration.getVertxPath());
         } else {
             return handler;
         }

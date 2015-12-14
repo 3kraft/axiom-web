@@ -1,5 +1,6 @@
 package org.zalando.axiom.web.handler;
 
+import com.codahale.metrics.Counter;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
@@ -12,22 +13,24 @@ import java.util.concurrent.TimeUnit;
 
 public class MetricsHandler implements Handler<RoutingContext> {
 
-    private MetricRegistry metricRegistry;
+    private final MetricRegistry metricRegistry;
 
-    private Handler<RoutingContext> subHandler;
+    private final Handler<RoutingContext> subHandler;
 
-    public MetricsHandler(MetricRegistry metricRegistry, Handler<RoutingContext> subHandler) {
+    private final String path;
+
+    public MetricsHandler(MetricRegistry metricRegistry, Handler<RoutingContext> subHandler, String path) {
         this.metricRegistry = metricRegistry;
         this.subHandler = subHandler;
+        this.path = path;
     }
 
     @Override
     public void handle(RoutingContext routingContext) {
         HttpServerRequest request = routingContext.request();
-        String timerMetricsName = Strings.toMetricsName(request.method(), request.path());
-        String histogramMetricsName = "statusCodes." + Strings.toMetricsName(request.method(), request.path());
+        String timerMetricsName = Strings.toMetricsName(request.method(), path);
+        String counterMetricsName = "statusCodes." + Strings.toMetricsName(request.method(), path);
 
-        Histogram histogram = metricRegistry.histogram(histogramMetricsName);
 
         long start = System.currentTimeMillis();
         try {
@@ -42,7 +45,8 @@ public class MetricsHandler implements Handler<RoutingContext> {
             Timer statusTimer = metricRegistry.timer(Integer.toString(statusCode) + '.' + timerMetricsName);
             statusTimer.update(duration, TimeUnit.MILLISECONDS);
 
-            histogram.update(statusCode);
+            Counter counter = metricRegistry.counter(counterMetricsName + '.' + statusCode);
+            counter.inc();
         }
     }
 }
