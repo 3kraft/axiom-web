@@ -37,7 +37,11 @@ public final class GetWithZeroOrOneParameterHandler implements Handler<RoutingCo
             throw new UnsupportedOperationException("Controller with this arity is not yet implemented!");
         }
         try {
-            routingContext.response().setStatusCode(200).end(mapper.writeValueAsString(value));
+            if (value == null) {
+                routingContext.response().setStatusCode(404).end();
+            } else {
+                routingContext.response().setStatusCode(200).end(mapper.writeValueAsString(value));
+            }
         } catch (Exception throwable) {
             LOGGER.error("Invoking controller method failed!", throwable);
             routingContext.fail(500);

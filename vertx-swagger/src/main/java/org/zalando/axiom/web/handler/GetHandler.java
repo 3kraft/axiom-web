@@ -67,11 +67,15 @@ public class GetHandler<T, R> implements Handler<RoutingContext> {
             }
             R result = function.apply(paramType.cast(parameter));
             try {
-                routingContext.response().setStatusCode(200).end(mapper.writeValueAsString(result));
+                if (result == null) {
+                    routingContext.response().setStatusCode(404).end();
+                } else {
+                    routingContext.response().setStatusCode(200).end(mapper.writeValueAsString(result));
+                }
             } catch (JsonProcessingException e) {
                 fail(String.format("Could not serialize result [%s]!", result.getClass().getName()), e, routingContext);
             }
-        } catch (InvocationTargetException| InstantiationException | IllegalAccessException e) {
+        } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
             fail("Error occurred on calling controller method!", e, routingContext);
         }
     }
