@@ -10,4 +10,10 @@ public final class Preconditions {
             throw new NullPointerException(message);
         }
     }
+
+    public static void checkNotBlank(String string, String message) {
+        if (string == null || "".equals(string)) {
+            throw new IllegalArgumentException(message);
+        }
+    }
 }

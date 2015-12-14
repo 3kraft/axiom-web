@@ -1,9 +1,12 @@
 package org.zalando.axiom.web.util;
 
+import io.vertx.core.http.HttpMethod;
+
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
+import static org.zalando.axiom.web.util.Preconditions.checkNotBlank;
 import static org.zalando.axiom.web.util.Preconditions.checkNotNull;
 
 public final class Strings {
@@ -84,5 +87,14 @@ public final class Strings {
             }
         }
         return result.toString();
+    }
+
+    private static final Pattern METRICS_REPLACE_PATTERN = Pattern.compile("[{}:]");
+    // "zmon.response.200.GET.checks.all-active-check-definitions.count": 10,
+    public static String toMetricsName(HttpMethod httpMethod, String path) {
+        checkNotNull(httpMethod, "Http method must not be null!");
+        checkNotBlank(path, "Path must not be blank!");
+
+        return httpMethod.name() + METRICS_REPLACE_PATTERN.matcher(path.replace('/', '.').replace("}", "")).replaceAll("_");
     }
 }

@@ -1,5 +1,6 @@
 package org.zalando.axiom.web;
 
+import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import io.swagger.models.Swagger;
@@ -7,8 +8,11 @@ import io.swagger.parser.Swagger20Parser;
 import org.zalando.axiom.web.binding.BindingBuilderFactory;
 import org.zalando.axiom.web.domain.SwaggerRouterConfiguration;
 import org.zalando.axiom.web.exceptions.LoadException;
+import org.zalando.axiom.web.util.Preconditions;
 
 import java.io.*;
+
+import static org.zalando.axiom.web.util.Preconditions.checkNotNull;
 
 public final class SwaggerRouter {
 
@@ -17,6 +21,8 @@ public final class SwaggerRouter {
     private ObjectMapper mapper;
 
     private PropertyNamingStrategy propertyNamingStrategy = PropertyNamingStrategy.CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES;
+
+    private MetricRegistry metricsRegistry;
 
     private SwaggerRouter() {
         this.mapper = new ObjectMapper();
@@ -39,14 +45,24 @@ public final class SwaggerRouter {
         return new BindingBuilderFactory(swaggerRouter);
     }
 
-    private void configure(SwaggerRouterConfiguration configuration) {
+    public static SwaggerRouterConfiguration configure() {
+        return new SwaggerRouterConfiguration();
+    }
+
+    public SwaggerRouter configure(SwaggerRouterConfiguration configuration) {
         if (configuration == null) {
-            return;
+            return this;
         }
 
         if (configuration.getMapper() != null) {
             this.mapper = configuration.getMapper();
         }
+
+        if (configuration.isCollectMetrics()) {
+            this.metricsRegistry = new MetricRegistry();
+        }
+
+        return this;
     }
 
     public ObjectMapper getMapper() {
@@ -55,6 +71,14 @@ public final class SwaggerRouter {
 
     public Swagger getSwagger() {
         return swagger;
+    }
+
+    public MetricRegistry getMetricsRegistry() {
+        return metricsRegistry;
+    }
+
+    public boolean isMetricsEnabled() {
+        return getMetricsRegistry() != null;
     }
 
     private Swagger load(InputStream jsonStream) {

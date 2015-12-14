@@ -18,6 +18,17 @@ Then use the router to start an http server:
 
 The returned router is a normal vertx router, so it can be used to bind additional controllers to paths.
 
+To collect metrics just enable it in the configuration:
+
+    Router router = SwaggerRouter.configure().collectMetrics()
+                                 .swaggerDefinition("/swagger-minimal.json")
+                                 .bindTo("/products")
+                                     .get(ProductParameter.class, controller::get)
+                                     .doBind()
+                                 .router(vertx);
+
+_Note:_ Metrics are collected only for the routes defined in the swagger definition.
+
 _Note:_ The API base path is taken from the swagger definition file! The bindings should contain only the relative paths
 to the base path.
 
