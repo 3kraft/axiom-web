@@ -42,7 +42,7 @@ public class PostHandler<T, R> implements Handler<RoutingContext> {
         try {
             id = function.apply(mapper.readValue(bodyAsJson, paramType));
         } catch (Exception e) {
-            LOGGER.error("Unexpected exception occured!", e);
+            LOGGER.error("Unexpected exception occurred!", e);
             routingContext.fail(500);
             return;
         }
