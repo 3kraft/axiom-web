@@ -60,33 +60,33 @@ public class PostHandler<T, R> implements Handler<RoutingContext> {
     }
 
     private void handleResult(RoutingContext routingContext, Object result) {
-        // if method returns string it is taken as the id
-        // otherwise the result object has to have a getId method, which returns string
-        String id;
-        if (result instanceof String) {
-            id = result.toString();
-        } else {
-            MethodHandles.Lookup lookup = MethodHandles.lookup();
-            Object idObject = null;
-            try {
-                MethodHandle getIdMethodHandle = lookup.findVirtual(result.getClass(), "getId", MethodType.methodType(String.class));
-                idObject = getIdMethodHandle.invoke(result);
-            } catch (Throwable throwable) {
-                LOGGER.error("Could not call method to retrieve id!", throwable);
-            }
-            if (idObject == null) {
-                throw new IllegalStateException(String.format("Id method on [%s] returned null!", result.getClass()));
-            }
-            id = idObject.toString();
-        }
-
         HttpServerResponse response = routingContext.response();
-        String path = routingContext.request().path();
         if (doSetLocation()) {
+            // If method returns String, then it is taken as the id,
+            // otherwise the result object has to have a getId method, which returns string.
+            final String id = result instanceof String ? result.toString() : getIdFromResult(result);
+
+            final String path = routingContext.request().path();
             response.headers().set(HttpHeaders.LOCATION, path + "/" + id);
         }
         response.setStatusCode(201);
         response.end();
+    }
+
+    private String getIdFromResult(Object result) {
+        String id;MethodHandles.Lookup lookup = MethodHandles.lookup();
+        Object idObject = null;
+        try {
+            MethodHandle getIdMethodHandle = lookup.findVirtual(result.getClass(), "getId", MethodType.methodType(String.class));
+            idObject = getIdMethodHandle.invoke(result);
+        } catch (Throwable throwable) {
+            LOGGER.error("Could not call method to retrieve id!", throwable);
+        }
+        if (idObject == null) {
+            throw new IllegalStateException(String.format("Id method on [%s] returned null!", result.getClass()));
+        }
+        id = idObject.toString();
+        return id;
     }
 
     private boolean doSetLocation() {
