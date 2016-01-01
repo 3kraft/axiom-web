@@ -12,6 +12,7 @@ import static org.zalando.axiom.web.util.Preconditions.checkNotNull;
 public final class Strings {
 
     private static final Pattern SEGMENT_DELIMITER = Pattern.compile("/");
+    private static final Pattern METRICS_REPLACE_PATTERN = Pattern.compile("[{}:]");
 
     public static String getSetterName(String name) {
         checkNotNull("Name must not be null!", name);
@@ -73,6 +74,10 @@ public final class Strings {
         return string == null || "".equals(string);
     }
 
+    public static boolean isNotBlank(String string) {
+        return !isBlank(string);
+    }
+
     public static String valueOrElse(String value, String fallback) {
         return isBlank(value) ? "" : value;
     }
@@ -97,7 +102,6 @@ public final class Strings {
         return result.toString();
     }
 
-    private static final Pattern METRICS_REPLACE_PATTERN = Pattern.compile("[{}:]");
     // "zmon.response.200.GET.checks.all-active-check-definitions.count": 10,
     public static String toMetricsName(HttpMethod httpMethod, String path) {
         checkNotNull(httpMethod, "Http method must not be null!");
