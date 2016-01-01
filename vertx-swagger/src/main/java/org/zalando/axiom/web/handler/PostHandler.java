@@ -1,6 +1,8 @@
 package org.zalando.axiom.web.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.swagger.models.Operation;
+import io.swagger.models.Swagger;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerResponse;
@@ -22,13 +24,16 @@ public class PostHandler<T, R> implements Handler<RoutingContext> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PostHandler.class);
 
+    private final Operation operation;
+
     private final ObjectMapper mapper;
 
     private final Function<T, R> function;
 
     private final Class<T> paramType;
 
-    public PostHandler(ObjectMapper mapper, Function<T, R> function, Class<T> paramType) {
+    public PostHandler(Operation operation, ObjectMapper mapper, Function<T, R> function, Class<T> paramType) {
+        this.operation = operation;
         this.mapper = mapper;
         this.function = function;
         this.paramType = paramType;
@@ -80,8 +85,15 @@ public class PostHandler<T, R> implements Handler<RoutingContext> {
         }
 
         HttpServerResponse response = routingContext.response();
-        response.headers().set(HttpHeaders.LOCATION, routingContext.request().path() + "/" + id);
+        String path = routingContext.request().path();
+        if (doSetLocation()) {
+            response.headers().set(HttpHeaders.LOCATION, path + "/" + id);
+        }
         response.setStatusCode(201);
         response.end();
+    }
+
+    private boolean doSetLocation() {
+        return operation.getResponses().get("201").getHeaders().containsKey("Location");
     }
 }

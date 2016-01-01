@@ -2,6 +2,7 @@ package org.zalando.axiom.web.binding;
 
 import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.swagger.models.Operation;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.RoutingContext;
@@ -70,7 +71,8 @@ public class DefaultBindingBuilder implements BindingBuilder {
     }
 
     public <T, R> DefaultBindingBuilder post(Class<T> paramType, Function<T, R> function) {
-        routeConfiguration.addHandler(HttpMethod.POST, toMetricsHandler(new PostHandler<>(swaggerRouter.getMapper(), function, paramType)));
+        Operation postOperation = swaggerRouter.getSwagger().getPath(routeConfiguration.getSwaggerPath()).getPost();
+        routeConfiguration.addHandler(HttpMethod.POST, toMetricsHandler(new PostHandler<>(postOperation, swaggerRouter.getMapper(), function, paramType)));
         return this;
     }
 

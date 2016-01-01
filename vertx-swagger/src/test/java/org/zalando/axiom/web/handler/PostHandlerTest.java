@@ -56,6 +56,19 @@ public class PostHandlerTest {
     }
 
     @Test
+    public void testPostHandlerWithoutLocation(TestContext context) throws Exception {
+        ProductController controller = new ProductController();
+        testPost(context, false,
+                // @formatter:off
+                () -> SwaggerRouter.swaggerDefinition("/swagger-post.json")
+                    .bindTo("/products")
+                        .post(Product.class, controller::create)
+                        .doBind()
+                    .router(vertx));
+                // @formatter:on);
+    }
+
+    @Test
     public void testPostHandlerIdInResultObject(TestContext context) throws Exception {
         ProductController controller = new ProductController();
         testPost(context,
@@ -69,14 +82,21 @@ public class PostHandlerTest {
     }
 
     private void testPost(TestContext context, Supplier<Router> routerFactory) throws Exception {
+        testPost(context, true, routerFactory);
+    }
+
+    private void testPost(TestContext context, boolean withLocation, Supplier<Router> routerFactory) throws Exception {
         Product product = product(0);
         Async async = context.async();
         HttpClientRequest request = getHttpClientRequest(context, async, product);
         VertxUtils.startHttpServer(vertx, request, mapper.writeValueAsString(product), routerFactory);
-
     }
 
     private HttpClientRequest getHttpClientRequest(TestContext context, Async async, Product product) {
+        return getHttpClientRequest(context, async, product, true);
+    }
+
+    private HttpClientRequest getHttpClientRequest(TestContext context, Async async, Product product, boolean withLocation) {
         final String uri = "/v1/products";
         return VertxUtils.setUpPostRequest(vertx, context, async, uri, 201, response -> {
             String location = response.headers().get(HttpHeaders.LOCATION);

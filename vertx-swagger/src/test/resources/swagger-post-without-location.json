@@ -31,12 +31,7 @@
                 ],
                 "responses": {
                     "201": {
-                        "description": "Product created",
-                        "headers": {
-                            "Location": {
-                                "type": "string"
-                            }
-                        }
+                        "description": "Product created"
                     },
                     "default": {
                         "description": "Unexpected error",

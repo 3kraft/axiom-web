@@ -33,7 +33,7 @@
                     "201": {
                         "description": "Product created",
                         "headers": {
-                            "Location:": {
+                            "Location": {
                                 "type": "string"
                             }
                         }
