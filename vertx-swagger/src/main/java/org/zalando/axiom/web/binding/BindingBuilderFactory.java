@@ -13,7 +13,6 @@ import org.zalando.axiom.web.binding.functions.StringFunction;
 import org.zalando.axiom.web.util.Strings;
 
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -36,6 +35,7 @@ public class BindingBuilderFactory {
 
     public DefaultBindingBuilder bindTo(String path) {
         checkNotNull(path, "Path must not be null!");
+        checkPathBinding(path);
         return new DefaultBindingBuilder(this, swaggerRouter, path);
     }
 
@@ -57,14 +57,14 @@ public class BindingBuilderFactory {
     public Router router(Vertx vertx) {
         SwaggerVertxRouter router = SwaggerVertxRouter.router(vertx);
         for (RouteConfiguration routeConfiguration : routeConfigurations.values()) {
-            for (Map.Entry<HttpMethod, Handler<RoutingContext>> entry : routeConfiguration.entrySet()) {
+            for (Map.Entry<HttpMethod, List<Handler<RoutingContext>>> entry : routeConfiguration.entrySet()) {
                 final Swagger swagger = swaggerRouter.getSwagger();
 
                 final String basePath = Strings.valueOrElse(swagger.getBasePath(), "");
                 String path = basePath + routeConfiguration.getVertxPath();
 
                 LOGGER.debug(String.format("Binding method [%s] and path [%s].", entry.getKey(), path));
-                router.route(entry.getKey(), path).handler(entry.getValue());
+                entry.getValue().forEach(handler -> router.route(entry.getKey(), path).handler(handler));
             }
         }
         return router;
@@ -72,14 +72,17 @@ public class BindingBuilderFactory {
 
     private DefaultBindingBuilder getBindingBuilder(String path) {
         checkNotNull(path, "Path must not be null!");
+        checkPathBinding(path);
         return new DefaultBindingBuilder(this, swaggerRouter, path);
     }
 
-    void registerRoute(RouteConfiguration routeConfiguration) {
-        String swaggerPath = routeConfiguration.getSwaggerPath();
-        if (routeConfigurations.containsKey(swaggerPath)) {
-            throw new IllegalStateException(String.format("Configuration for route [%s] is already added!", swaggerPath));
+    void checkPathBinding(String path) {
+        if (routeConfigurations.containsKey(path)) {
+            throw new IllegalStateException(String.format("Configuration for route [%s] is already added!", path));
         }
-        routeConfigurations.put(swaggerPath, routeConfiguration);
+    }
+
+    void registerRoute(RouteConfiguration routeConfiguration) {
+        routeConfigurations.put(routeConfiguration.getSwaggerPath(), routeConfiguration);
     }
 }

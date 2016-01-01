@@ -12,6 +12,7 @@ import org.zalando.axiom.web.SwaggerRouter;
 import org.zalando.axiom.web.binding.functions.StringFunction;
 import org.zalando.axiom.web.handler.*;
 
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
@@ -27,10 +28,13 @@ public class DefaultBindingBuilder implements BindingBuilder {
 
     private final RouteConfiguration routeConfiguration;
 
+    private final Map<io.swagger.models.HttpMethod, Operation> operationMap;
+
     public DefaultBindingBuilder(BindingBuilderFactory bindingBuilderFactory, SwaggerRouter swaggerRouter, String path) {
         this.bindingBuilderFactory = bindingBuilderFactory;
         this.swaggerRouter = swaggerRouter;
         this.routeConfiguration = new RouteConfiguration(path);
+        this.operationMap = swaggerRouter.getSwagger().getPath(routeConfiguration.getSwaggerPath()).getOperationMap();
     }
 
     public <T> DefaultBindingBuilder get(Supplier<T> function) {
@@ -49,6 +53,7 @@ public class DefaultBindingBuilder implements BindingBuilder {
     }
 
     public <T, R> DefaultBindingBuilder get(Class<T> paramType, Function<T, R> function) {
+        routeConfiguration.addHandler(HttpMethod.GET, new ParameterCheckHandler(operationMap.get(io.swagger.models.HttpMethod.GET)));
         routeConfiguration.addHandler(HttpMethod.GET, toMetricsHandler(new GetHandler<>(swaggerRouter.getMapper(), function, paramType, swaggerRouter.getSwagger().getPath(routeConfiguration.getSwaggerPath()))));
         return this;
     }
@@ -66,6 +71,8 @@ public class DefaultBindingBuilder implements BindingBuilder {
     }
 
     private DefaultBindingBuilder get(Object function) {
+        routeConfiguration.addHandler(HttpMethod.GET, new ParameterCheckHandler(operationMap.get(io.swagger.models.HttpMethod.GET)));
+        routeConfiguration.addHandler(HttpMethod.GET, new ParameterCheckHandler(operationMap.get(io.swagger.models.HttpMethod.GET)));
         routeConfiguration.addHandler(HttpMethod.GET, toMetricsHandler(new GetWithZeroOrOneParameterHandler(swaggerRouter.getMapper(), function)));
         return this;
     }

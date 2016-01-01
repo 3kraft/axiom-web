@@ -53,6 +53,11 @@ public class GetHandlerTest {
     }
 
     @Test
+    public void testGetTwoRequiredQueryParamsButOneMissing(TestContext context) throws Exception {
+        testGetTwoParams(context, "/v1/products?latitude=1.2", "/products", "/swagger-get-two-query-params.json", 400);
+    }
+
+    @Test
     public void testGetTwoPathParams(TestContext context) throws Exception {
         testGetTwoParams(context, "/v1/products/1.2/1.3", "/products/:latitude/:longitude", "/swagger-get-two-path-params.json");
     }
@@ -63,11 +68,15 @@ public class GetHandlerTest {
     }
 
     private void testGetTwoParams(TestContext context, String uriWithParams, String vertxPath, String swaggerJson) {
+        testGetTwoParams(context, uriWithParams, vertxPath, swaggerJson, 200);
+    }
+
+    private void testGetTwoParams(TestContext context, String uriWithParams, String vertxPath, String swaggerJson, int expectedStatusCode) {
         ProductController controller = productController(1);
 
         Async async = context.async();
 
-        HttpClientRequest request = getHttpClientRequest(context, uriWithParams, controller, async);
+        HttpClientRequest request = getHttpClientRequest(context, uriWithParams, controller, async, expectedStatusCode);
 
         startHttpServer(vertx, request, () -> {
             // @formatter:off
@@ -80,13 +89,15 @@ public class GetHandlerTest {
         });
     }
 
-    private HttpClientRequest getHttpClientRequest(TestContext context, String uriWithParams, ProductController controller, Async async) {
-        return setUpGetRequest(vertx, context, async, uriWithParams, 200,
+    private HttpClientRequest getHttpClientRequest(TestContext context, String uriWithParams, ProductController controller, Async async, int expectedStatusCode) {
+        return setUpGetRequest(vertx, context, async, uriWithParams, expectedStatusCode,
                 response -> response.bodyHandler(body -> {
                     try {
-                        List<Product> responseProduct = mapper.readValue(body.toString(), new TypeReference<List<Product>>() {
-                        });
-                        context.assertEquals(controller.getById("0"), responseProduct.get(0));
+                        if (expectedStatusCode == 200) {
+                            List<Product> responseProduct = mapper.readValue(body.toString(), new TypeReference<List<Product>>() {
+                            });
+                            context.assertEquals(controller.getById("0"), responseProduct.get(0));
+                        }
                     } catch (IOException e) {
                         context.fail(e);
                     }
@@ -99,7 +110,7 @@ public class GetHandlerTest {
 
         Async async = context.async();
 
-        HttpClientRequest request = getHttpClientRequest(context, "/v1/products?latitude=1.2&longitude=1.3", controller, async);
+        HttpClientRequest request = getHttpClientRequest(context, "/v1/products?latitude=1.2&longitude=1.3", controller, async, 200);
 
         startHttpServer(vertx, request, () -> {
             // @formatter:off

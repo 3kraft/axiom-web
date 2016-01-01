@@ -16,11 +16,7 @@ public final class HandlerUtils {
             throw new IllegalStateException("Exactly one parameter required!");
         }
         String name = params.names().iterator().next();
-        List<String> allParams = params.getAll(name);
-        if (allParams.size() != 1) {
-            throw new IllegalStateException("Exactly one parameter required!");
-        }
-        return allParams.get(0);
+        return params.get(name);
     }
 
 }
