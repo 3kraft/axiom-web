@@ -2,23 +2,19 @@ package org.zalando.axiom.web.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.models.Operation;
-import io.swagger.models.Swagger;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.zalando.axiom.web.util.Preconditions;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.function.Function;
 
 import static org.zalando.axiom.web.util.Preconditions.checkNotNull;
-import static org.zalando.axiom.web.util.Types.getParameterType;
 
 public class PostHandler<T, R> implements Handler<RoutingContext> {
 

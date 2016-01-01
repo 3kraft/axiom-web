@@ -8,11 +8,8 @@ import io.swagger.parser.Swagger20Parser;
 import org.zalando.axiom.web.binding.BindingBuilderFactory;
 import org.zalando.axiom.web.domain.SwaggerRouterConfiguration;
 import org.zalando.axiom.web.exceptions.LoadException;
-import org.zalando.axiom.web.util.Preconditions;
 
 import java.io.*;
-
-import static org.zalando.axiom.web.util.Preconditions.checkNotNull;
 
 public final class SwaggerRouter {
 
