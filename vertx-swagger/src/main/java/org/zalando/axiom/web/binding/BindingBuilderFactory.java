@@ -12,6 +12,7 @@ import org.zalando.axiom.web.SwaggerRouter;
 import org.zalando.axiom.web.binding.functions.StringFunction;
 import org.zalando.axiom.web.util.Strings;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -26,11 +27,11 @@ public class BindingBuilderFactory {
 
     private final SwaggerRouter swaggerRouter;
 
-    private final List<RouteConfiguration> routeConfigurations;
+    private final Map<String, RouteConfiguration> routeConfigurations;
 
     public BindingBuilderFactory(SwaggerRouter swaggerRouter) {
         this.swaggerRouter = swaggerRouter;
-        this.routeConfigurations = new LinkedList<>();
+        this.routeConfigurations = new HashMap<>();
     }
 
     public DefaultBindingBuilder bindTo(String path) {
@@ -55,7 +56,7 @@ public class BindingBuilderFactory {
 
     public Router router(Vertx vertx) {
         SwaggerVertxRouter router = SwaggerVertxRouter.router(vertx);
-        for (RouteConfiguration routeConfiguration : routeConfigurations) {
+        for (RouteConfiguration routeConfiguration : routeConfigurations.values()) {
             for (Map.Entry<HttpMethod, Handler<RoutingContext>> entry : routeConfiguration.entrySet()) {
                 final Swagger swagger = swaggerRouter.getSwagger();
 
@@ -75,6 +76,10 @@ public class BindingBuilderFactory {
     }
 
     void registerRoute(RouteConfiguration routeConfiguration) {
-        routeConfigurations.add(routeConfiguration);
+        String swaggerPath = routeConfiguration.getSwaggerPath();
+        if (routeConfigurations.containsKey(swaggerPath)) {
+            throw new IllegalStateException(String.format("Configuration for route [%s] is already added!", swaggerPath));
+        }
+        routeConfigurations.put(swaggerPath, routeConfiguration);
     }
 }
