@@ -119,17 +119,7 @@ public class GetHandlerTest {
 
         Async async = context.async();
 
-        String id = "3";
-        HttpClientRequest request = setUpGetRequest(vertx, context, async, "/v1/products/" + id, 200,
-                response -> response.bodyHandler(body -> {
-                    try {
-                        Product responseProduct = mapper.readValue(body.toString(), new TypeReference<Product>() {
-                        });
-                        context.assertEquals(controller.getById(id), responseProduct);
-                    } catch (IOException e) {
-                        context.fail(e);
-                    }
-                }));
+        HttpClientRequest request = getHttpClientRequestForGetById(context, controller, async);
 
         startHttpServer(vertx, request, () -> {
             // @formatter:off
@@ -140,5 +130,37 @@ public class GetHandlerTest {
                     .router(vertx);
             // @formatter:on
         });
+    }
+
+    @Test
+    public void testGetByIdShortHand(TestContext context) throws Exception {
+        int productCount = 5;
+        ProductController controller = productController(productCount);
+
+        Async async = context.async();
+
+        HttpClientRequest request = getHttpClientRequestForGetById(context, controller, async);
+
+        startHttpServer(vertx, request, () -> {
+            // @formatter:off
+            return SwaggerRouter.swaggerDefinition("/swagger-get-by-id.json")
+                    .getById("/products/:id", controller::getById)
+                    .router(vertx);
+            // @formatter:on
+        });
+    }
+
+    private HttpClientRequest getHttpClientRequestForGetById(TestContext context, ProductController controller, Async async) {
+        String id = "3";
+        return setUpGetRequest(vertx, context, async, "/v1/products/" + id, 200,
+                response -> response.bodyHandler(body -> {
+                    try {
+                        Product responseProduct = mapper.readValue(body.toString(), new TypeReference<Product>() {
+                        });
+                        context.assertEquals(controller.getById(id), responseProduct);
+                    } catch (IOException e) {
+                        context.fail(e);
+                    }
+                }));
     }
 }

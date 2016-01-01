@@ -9,11 +9,14 @@ import io.vertx.ext.web.RoutingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zalando.axiom.web.SwaggerRouter;
+import org.zalando.axiom.web.binding.functions.StringFunction;
 import org.zalando.axiom.web.util.Strings;
 
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static org.zalando.axiom.web.util.Preconditions.checkNotNull;
 
@@ -35,6 +38,21 @@ public class BindingBuilderFactory {
         return new DefaultBindingBuilder(this, swaggerRouter, path);
     }
 
+    public BindingBuilderFactory get(String path, Supplier<Object> supplier) {
+        getBindingBuilder(path).get(supplier).doBind();
+        return this;
+    }
+
+    public <T, R> BindingBuilderFactory get(String path, Class<T> paramType, Function<T, R> function) {
+        getBindingBuilder(path).get(paramType, function).doBind();
+        return this;
+    }
+
+    public BindingBuilderFactory getById(String path, StringFunction<Object> supplier) {
+        getBindingBuilder(path).get(supplier).doBind();
+        return this;
+    }
+
     public Router router(Vertx vertx) {
         SwaggerVertxRouter router = SwaggerVertxRouter.router(vertx);
         for (RouteConfiguration routeConfiguration : routeConfigurations) {
@@ -49,6 +67,11 @@ public class BindingBuilderFactory {
             }
         }
         return router;
+    }
+
+    private DefaultBindingBuilder getBindingBuilder(String path) {
+        checkNotNull(path, "Path must not be null!");
+        return new DefaultBindingBuilder(this, swaggerRouter, path);
     }
 
     void registerRoute(RouteConfiguration routeConfiguration) {
