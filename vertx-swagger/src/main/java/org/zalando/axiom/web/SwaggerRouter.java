@@ -33,13 +33,16 @@ public final class SwaggerRouter {
     }
 
     public static BindingBuilderFactory swaggerDefinition(String onClassPath, SwaggerRouterConfiguration configuration) {
-        InputStream jsonStream = SwaggerRouter.class.getResourceAsStream(onClassPath);
+        try (InputStream jsonStream = SwaggerRouter.class.getResourceAsStream(onClassPath)) {
 
-        SwaggerRouter swaggerRouter = new SwaggerRouter();
-        swaggerRouter.configure(configuration);
-        swaggerRouter.swagger = swaggerRouter.load(jsonStream);
+            SwaggerRouter swaggerRouter = new SwaggerRouter();
+            swaggerRouter.configure(configuration);
+            swaggerRouter.swagger = swaggerRouter.load(jsonStream);
 
-        return new BindingBuilderFactory(swaggerRouter);
+            return new BindingBuilderFactory(swaggerRouter);
+        } catch (IOException e) {
+            throw new LoadException("Could not open swagger definition!", e);
+        }
     }
 
     public static SwaggerRouterConfiguration configure() {
@@ -79,7 +82,7 @@ public final class SwaggerRouter {
     }
 
     private Swagger load(InputStream jsonStream) {
-        try (InputStreamReader reader = new InputStreamReader(jsonStream); Reader bufferedReader = new BufferedReader(reader)) {
+        try (InputStreamReader reader = new InputStreamReader(jsonStream, "UTF-8"); Reader bufferedReader = new BufferedReader(reader)) {
             return new Swagger20Parser().read(new ObjectMapper().readTree(bufferedReader));
         } catch (IOException e) {
             throw new LoadException(e);
