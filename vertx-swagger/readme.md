@@ -78,7 +78,7 @@ A single parameter is required, and interpreted as id. If no exceptions occur `2
 
 # License
 
-Copyright 2015 Zalando SE
+Copyright 2016 Zalando SE
 
 http://opensource.org/licenses/MIT
 
