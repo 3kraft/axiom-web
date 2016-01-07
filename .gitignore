@@ -3,3 +3,4 @@ build/
 .*.sw?
 *.iml
 gradle.properties
+.idea

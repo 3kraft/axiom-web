@@ -8,15 +8,17 @@ import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.zalando.axiom.web.binding.functions.AsyncConsumer;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static org.zalando.axiom.web.util.Preconditions.checkNotNull;
 
-public class PostHandler<T, R> implements Handler<RoutingContext> {
+public class PostHandler<T> implements Handler<RoutingContext> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PostHandler.class);
 
@@ -24,11 +26,11 @@ public class PostHandler<T, R> implements Handler<RoutingContext> {
 
     private final ObjectMapper mapper;
 
-    private final Function<T, R> function;
+    private final Object function;
 
     private final Class<T> paramType;
 
-    public PostHandler(Operation operation, ObjectMapper mapper, Function<T, R> function, Class<T> paramType) {
+    public PostHandler(Operation operation, ObjectMapper mapper, Object function, Class<T> paramType) {
         this.operation = operation;
         this.mapper = mapper;
         this.function = function;
@@ -39,18 +41,32 @@ public class PostHandler<T, R> implements Handler<RoutingContext> {
         String bodyAsJson = routingContext.getBodyAsString("UTF-8");
 
         checkNotNull(bodyAsJson, "Body must not be null!");
-        Object id;
+        executeFunction(routingContext, bodyAsJson, id -> {
+            if (id == null) {
+                handleNoResult(routingContext);
+            } else {
+                handleResult(routingContext, id);
+            }
+        });
+
+    }
+
+    @SuppressWarnings("unchecked") // async functions with generic consumers cause not nice warnings
+    private void executeFunction(RoutingContext routingContext, String bodyAsJson, Consumer<Object> callback) {
         try {
-            id = function.apply(mapper.readValue(bodyAsJson, paramType));
+            if (function instanceof AsyncConsumer) {
+                ((AsyncConsumer) function).accept(mapper.readValue(bodyAsJson, paramType), callback);
+            }
+            else if (function instanceof Function) {
+                Object id = ((Function) function).apply(mapper.readValue(bodyAsJson, paramType));
+                callback.accept(id);
+            }
+            else {
+                throw new UnsupportedOperationException(String.format("Controller with this arity is not yet implemented: [%s]", function.getClass().getName()));
+            }
         } catch (Exception e) {
             LOGGER.error("Unexpected exception occurred!", e);
             routingContext.fail(500);
-            return;
-        }
-        if (id == null) {
-            handleNoResult(routingContext);
-        } else {
-            handleResult(routingContext, id);
         }
     }
 

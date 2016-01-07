@@ -9,7 +9,7 @@ import io.vertx.ext.web.RoutingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zalando.axiom.web.SwaggerRouter;
-import org.zalando.axiom.web.binding.functions.StringFunction;
+import org.zalando.axiom.web.binding.functions.*;
 import org.zalando.axiom.web.handler.*;
 
 import java.util.Map;
@@ -52,6 +52,21 @@ public class DefaultBindingBuilder implements BindingBuilder {
         return this;
     }
 
+    public <T> DefaultBindingBuilder get(AsyncStringFunction<T> function) {
+        get((Object) function);
+        return this;
+    }
+
+    public <T> DefaultBindingBuilder get(AsyncIntFunction<T> function) {
+        get((Object) function);
+        return this;
+    }
+
+    public <T> DefaultBindingBuilder get(AsyncSupplier<T> function) {
+        get((Object) function);
+        return this;
+    }
+
     public <T, R> DefaultBindingBuilder get(Class<T> paramType, Function<T, R> function) {
         routeConfiguration.addHandler(HttpMethod.GET, new ParameterCheckHandler(operationMap.get(io.swagger.models.HttpMethod.GET)));
         routeConfiguration.addHandler(HttpMethod.GET, toMetricsHandler(new GetHandler<>(swaggerRouter.getMapper(), function, paramType, swaggerRouter.getSwagger().getPath(routeConfiguration.getSwaggerPath()))));
@@ -83,6 +98,12 @@ public class DefaultBindingBuilder implements BindingBuilder {
         return this;
     }
 
+    public <T, R> DefaultBindingBuilder post(Class<T> paramType, AsyncConsumer<T, R> function) {
+        Operation postOperation = swaggerRouter.getSwagger().getPath(routeConfiguration.getSwaggerPath()).getPost();
+        routeConfiguration.addHandler(HttpMethod.POST, toMetricsHandler(new PostHandler<>(postOperation, swaggerRouter.getMapper(), function, paramType)));
+        return this;
+    }
+
     public DefaultBindingBuilder delete(Consumer<String> function) {
         routeConfiguration.addHandler(HttpMethod.DELETE, toMetricsHandler(new DeleteHandler(function)));
         return this;
@@ -101,5 +122,4 @@ public class DefaultBindingBuilder implements BindingBuilder {
             return handler;
         }
     }
-
 }
