@@ -14,7 +14,6 @@ import org.junit.runner.RunWith;
 import org.zalando.axiom.web.SwaggerRouter;
 import org.zalando.axiom.web.controller.ProductController;
 import org.zalando.axiom.web.util.Data;
-import org.zalando.axiom.web.util.VertxUtils;
 
 import static org.zalando.axiom.web.util.VertxUtils.setUpDeleteRequest;
 import static org.zalando.axiom.web.util.VertxUtils.startHttpServer;
@@ -43,7 +42,7 @@ public class DeleteHandlerTest {
     public void testDelete(TestContext context) throws Exception {
         Async async = context.async();
 
-        ProductController controller = Data.productController(5);
+        ProductController controller = Data.productController(vertx, 5);
         HttpClientRequest request = setUpDeleteRequest(vertx, context, async, "/v1/products/" + 3, 204);
 
         startHttpServer(vertx, request, () -> {

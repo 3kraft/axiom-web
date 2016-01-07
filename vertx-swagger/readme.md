@@ -76,6 +76,21 @@ If the `Location` header is specified in the swagger definitions then:
 
 A single parameter is required, and interpreted as id. If no exceptions occur `204` is returned as status.
 
+### Building
+
+Gradle expects to have couple of build properties:
+
+    #~/.gradle/gradle.properties
+
+    org.gradle.daemon=true
+    signing.keyId=
+    # signing.password=
+    signing.secretKeyRingFile=/home/USER/.gnupg/secring.gpg
+
+    sonatypeUsername=
+    sonatypePassword=
+
+
 # License
 
 Copyright 2016 Zalando SE

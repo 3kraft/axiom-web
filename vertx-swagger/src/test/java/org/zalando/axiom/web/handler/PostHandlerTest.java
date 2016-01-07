@@ -44,7 +44,7 @@ public class PostHandlerTest {
 
     @Test
     public void testPostHandler(TestContext context) throws Exception {
-        ProductController controller = new ProductController();
+        ProductController controller = new ProductController(vertx);
         testPost(context,
                 // @formatter:off
                 () -> SwaggerRouter.swaggerDefinition("/swagger-post.json")
@@ -57,7 +57,7 @@ public class PostHandlerTest {
 
     @Test
     public void testPostHandlerWithoutLocation(TestContext context) throws Exception {
-        ProductController controller = new ProductController();
+        ProductController controller = new ProductController(vertx);
         testPost(context, false,
                 // @formatter:off
                 () -> SwaggerRouter.swaggerDefinition("/swagger-post.json")
@@ -70,12 +70,25 @@ public class PostHandlerTest {
 
     @Test
     public void testPostHandlerIdInResultObject(TestContext context) throws Exception {
-        ProductController controller = new ProductController();
+        ProductController controller = new ProductController(vertx);
         testPost(context,
                 // @formatter:off
                 () -> SwaggerRouter.swaggerDefinition("/swagger-post-id-from-object.json")
                     .bindTo("/products")
                         .post(Product.class, controller::addProduct)
+                        .doBind()
+                    .router(vertx));
+                // @formatter:on);
+    }
+
+    @Test
+    public void testPostAsyncHandlerIdInResultObject(TestContext context) throws Exception {
+        ProductController controller = new ProductController(vertx);
+        testPost(context,
+                // @formatter:off
+                () -> SwaggerRouter.swaggerDefinition("/swagger-post-id-from-object.json")
+                    .bindTo("/products")
+                        .post(Product.class, controller::addProductAsync)
                         .doBind()
                     .router(vertx));
                 // @formatter:on);

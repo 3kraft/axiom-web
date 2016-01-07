@@ -9,6 +9,7 @@ import io.vertx.ext.web.RoutingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zalando.axiom.web.SwaggerRouter;
+import org.zalando.axiom.web.binding.functions.AsyncStringFunction;
 import org.zalando.axiom.web.binding.functions.StringFunction;
 import org.zalando.axiom.web.util.Strings;
 
@@ -50,6 +51,11 @@ public class BindingBuilderFactory {
     }
 
     public BindingBuilderFactory getById(String path, StringFunction<Object> supplier) {
+        getBindingBuilder(path).get(supplier).doBind();
+        return this;
+    }
+
+    public <T> BindingBuilderFactory getById(String path, AsyncStringFunction<T> supplier) {
         getBindingBuilder(path).get(supplier).doBind();
         return this;
     }
