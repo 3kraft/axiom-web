@@ -13,6 +13,7 @@ import io.vertx.core.MultiMap;
 import io.vertx.ext.web.RoutingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.zalando.axiom.web.binding.functions.AsyncFunction;
 import org.zalando.axiom.web.util.Types;
 
 import java.lang.invoke.MethodHandle;
@@ -24,6 +25,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -31,19 +33,19 @@ import static org.zalando.axiom.web.util.Preconditions.checkNotNull;
 import static org.zalando.axiom.web.util.Strings.getSetterName;
 import static org.zalando.axiom.web.util.Types.castValueToType;
 
-public class GetHandler<T, R> implements Handler<RoutingContext> {
+public class GetHandler<T> implements Handler<RoutingContext> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GetWithZeroOrOneParameterHandler.class);
 
     private final ObjectMapper mapper;
 
-    private final Function<T, R> function;
+    private final Object function;
 
     private final Class<T> paramType;
 
     private final Path path;
 
-    public GetHandler(ObjectMapper mapper, Function<T, R> function, Class<T> paramType, Path path) {
+    public GetHandler(ObjectMapper mapper, Object function, Class<T> paramType, Path path) {
         checkNotNull(mapper, "Mapper must not be null!");
         checkNotNull(function, "Function must not be null!");
         checkNotNull(paramType, "ParamType must not be null!");
@@ -65,18 +67,30 @@ public class GetHandler<T, R> implements Handler<RoutingContext> {
             } else {
                 parameter = fillParameterWithNonDefaultConstructor(paramType, params);
             }
-            R result = function.apply(paramType.cast(parameter));
-            try {
-                if (result == null) {
-                    routingContext.response().setStatusCode(404).end();
-                } else {
-                    routingContext.response().setStatusCode(200).end(mapper.writeValueAsString(result));
+            executeFunction(parameter, result -> {
+                try {
+                    if (result == null) {
+                        routingContext.response().setStatusCode(404).end();
+                    } else {
+                        routingContext.response().setStatusCode(200).end(mapper.writeValueAsString(result));
+                    }
+                } catch (JsonProcessingException e) {
+                    fail(String.format("Could not serialize result [%s]!", result.getClass().getName()), e, routingContext);
                 }
-            } catch (JsonProcessingException e) {
-                fail(String.format("Could not serialize result [%s]!", result.getClass().getName()), e, routingContext);
-            }
+            });
         } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
             fail("Error occurred on calling controller method!", e, routingContext);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void executeFunction(Object parameter, Consumer<Object> callback) {
+        if (function instanceof AsyncFunction) {
+            ((AsyncFunction) function).apply(parameter, callback);
+        }
+        else if (function instanceof Function) {
+            Object result = ((Function) function).apply(parameter);
+            callback.accept(result);
         }
     }
 

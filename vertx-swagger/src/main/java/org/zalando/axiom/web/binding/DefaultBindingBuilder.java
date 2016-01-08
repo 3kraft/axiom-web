@@ -3,23 +3,16 @@ package org.zalando.axiom.web.binding;
 import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.swagger.models.Operation;
+import io.swagger.models.Path;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.RoutingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zalando.axiom.web.SwaggerRouter;
-import org.zalando.axiom.web.binding.functions.AsyncConsumer;
-import org.zalando.axiom.web.binding.functions.AsyncIntFunction;
-import org.zalando.axiom.web.binding.functions.AsyncStringFunction;
-import org.zalando.axiom.web.binding.functions.AsyncSupplier;
-import org.zalando.axiom.web.binding.functions.StringFunction;
-import org.zalando.axiom.web.handler.DeleteHandler;
-import org.zalando.axiom.web.handler.GetHandler;
-import org.zalando.axiom.web.handler.GetWithZeroOrOneParameterHandler;
-import org.zalando.axiom.web.handler.MetricsHandler;
-import org.zalando.axiom.web.handler.ParameterCheckHandler;
-import org.zalando.axiom.web.handler.PostHandler;
+import org.zalando.axiom.web.binding.functions.*;
+import org.zalando.axiom.web.handler.*;
+import org.zalando.axiom.web.util.Preconditions;
 
 import java.util.Map;
 import java.util.function.Consumer;
@@ -43,7 +36,9 @@ public class DefaultBindingBuilder implements BindingBuilder {
         this.bindingBuilderFactory = bindingBuilderFactory;
         this.swaggerRouter = swaggerRouter;
         this.routeConfiguration = new RouteConfiguration(path);
-        this.operationMap = swaggerRouter.getSwagger().getPath(routeConfiguration.getSwaggerPath()).getOperationMap();
+        Path swaggerPath = swaggerRouter.getSwagger().getPath(routeConfiguration.getSwaggerPath());
+        Preconditions.checkNotNull(swaggerPath, String.format("Could not find swagger path: [%s] in swagger spec: [%s]", routeConfiguration.getSwaggerPath(), swaggerRouter.getSwagger().getPaths().keySet()));
+        this.operationMap = swaggerPath.getOperationMap();
     }
 
     public <T> DefaultBindingBuilder get(Supplier<T> function) {
@@ -77,6 +72,12 @@ public class DefaultBindingBuilder implements BindingBuilder {
     }
 
     public <T, R> DefaultBindingBuilder get(Class<T> paramType, Function<T, R> function) {
+        routeConfiguration.addHandler(HttpMethod.GET, new ParameterCheckHandler(operationMap.get(io.swagger.models.HttpMethod.GET)));
+        routeConfiguration.addHandler(HttpMethod.GET, toMetricsHandler(new GetHandler<>(swaggerRouter.getMapper(), function, paramType, swaggerRouter.getSwagger().getPath(routeConfiguration.getSwaggerPath()))));
+        return this;
+    }
+
+    public <T, R> DefaultBindingBuilder get(Class<T> paramType, AsyncFunction<T, R> function) {
         routeConfiguration.addHandler(HttpMethod.GET, new ParameterCheckHandler(operationMap.get(io.swagger.models.HttpMethod.GET)));
         routeConfiguration.addHandler(HttpMethod.GET, toMetricsHandler(new GetHandler<>(swaggerRouter.getMapper(), function, paramType, swaggerRouter.getSwagger().getPath(routeConfiguration.getSwaggerPath()))));
         return this;

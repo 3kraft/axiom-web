@@ -39,7 +39,8 @@ public final class GetWithZeroOrOneParameterHandler implements Handler<RoutingCo
                     try {
                         routingContext.response().setStatusCode(200).end(mapper.writeValueAsString(value));
                     } catch (JsonProcessingException e) {
-                        throw new RuntimeException(String.format("Failed to write json value as string: %s", value),e);
+                        LOGGER.error(String.format("Could not serialize result [%s]!", routingContext.currentRoute().getPath()), e);
+                        routingContext.fail(500);
                     }
                 }
         });

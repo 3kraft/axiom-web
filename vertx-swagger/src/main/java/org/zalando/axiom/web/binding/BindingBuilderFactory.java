@@ -9,7 +9,9 @@ import io.vertx.ext.web.RoutingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zalando.axiom.web.SwaggerRouter;
+import org.zalando.axiom.web.binding.functions.AsyncIntFunction;
 import org.zalando.axiom.web.binding.functions.AsyncStringFunction;
+import org.zalando.axiom.web.binding.functions.AsyncSupplier;
 import org.zalando.axiom.web.binding.functions.StringFunction;
 import org.zalando.axiom.web.util.Strings;
 
@@ -40,7 +42,12 @@ public class BindingBuilderFactory {
         return new DefaultBindingBuilder(this, swaggerRouter, path);
     }
 
-    public BindingBuilderFactory get(String path, Supplier<Object> supplier) {
+    public <T> BindingBuilderFactory get(String path, Supplier<T> supplier) {
+        getBindingBuilder(path).get(supplier).doBind();
+        return this;
+    }
+
+    public <T> BindingBuilderFactory get(String path, AsyncSupplier<T> supplier) {
         getBindingBuilder(path).get(supplier).doBind();
         return this;
     }
@@ -50,12 +57,32 @@ public class BindingBuilderFactory {
         return this;
     }
 
-    public BindingBuilderFactory getById(String path, StringFunction<Object> supplier) {
+    public <T> BindingBuilderFactory get(String path, StringFunction<T> supplier) {
+        getBindingBuilder(path).get(supplier).doBind();
+        return this;
+    }
+
+    public <T> BindingBuilderFactory get(String path, AsyncStringFunction<T> supplier) {
+        getBindingBuilder(path).get(supplier).doBind();
+        return this;
+    }
+
+    public <T> BindingBuilderFactory get(String path, AsyncIntFunction<T> supplier) {
+        getBindingBuilder(path).get(supplier).doBind();
+        return this;
+    }
+
+    public <T> BindingBuilderFactory getById(String path, StringFunction<T> supplier) {
         getBindingBuilder(path).get(supplier).doBind();
         return this;
     }
 
     public <T> BindingBuilderFactory getById(String path, AsyncStringFunction<T> supplier) {
+        getBindingBuilder(path).get(supplier).doBind();
+        return this;
+    }
+
+    public <T> BindingBuilderFactory getById(String path, AsyncIntFunction<T> supplier) {
         getBindingBuilder(path).get(supplier).doBind();
         return this;
     }
