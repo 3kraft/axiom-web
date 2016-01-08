@@ -1,9 +1,9 @@
 package org.zalando.axiom.web.binding.functions;
 
-import java.util.function.Consumer;
+import io.vertx.core.AsyncResultHandler;
 
 public interface AsyncIntFunction<T> extends Async {
 
-    void apply(Integer value, Consumer<T> callback);
+    void apply(Integer value, AsyncResultHandler<T> handler);
 
 }
