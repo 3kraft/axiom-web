@@ -50,12 +50,16 @@ public class ProductController {
         products.remove(id);
     }
 
-    public void getAsync(String id, Consumer<Product> callback) {
+    public void getAsync(String id, Consumer<Product> callback, Consumer<Throwable> errorHandler) {
         vertx.executeBlocking(event -> {
             Product product = getById(id);
             callback.accept(product);
             event.complete();
-        }, event -> {});
+        }, event -> {
+            if (event.failed()) {
+                errorHandler.accept(event.cause());
+            }
+        });
 
     }
 

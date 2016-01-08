@@ -4,6 +4,6 @@ import java.util.function.Consumer;
 
 public interface AsyncSupplier<T> extends Async {
 
-    void get(Consumer<T> callback);
+    void get(Consumer<T> callback, Consumer<Throwable> errorHandler);
 
 }

@@ -47,29 +47,24 @@ public final class GetWithZeroOrOneParameterHandler implements Handler<RoutingCo
     }
 
     private void executeFunction(RoutingContext routingContext, Consumer<Object> callback) {
-        try {
             if (function instanceof Async) {
                 executeAsyncFunction(routingContext, callback);
             }
             else {
                 executeBlockingFunction(routingContext, callback);
             }
-        } catch (Exception throwable) {
-            LOGGER.error(String.format("Invoking controller method failed: [%s]", routingContext.currentRoute().getPath()), throwable);
-            routingContext.fail(500);
-        }
     }
 
     @SuppressWarnings("unchecked") // async functions with generic consumers cause not nice warnings
     private void executeAsyncFunction(RoutingContext routingContext, Consumer<Object> callback) {
         if (function instanceof AsyncStringFunction) {
-            ((AsyncStringFunction) this.function).apply(getOnlyValue(routingContext), callback::accept);
+            ((AsyncStringFunction) this.function).apply(getOnlyValue(routingContext), callback::accept, errorHandler(routingContext));
         }
         else if (function instanceof AsyncSupplier) {
-            ((AsyncSupplier) function).get(callback::accept);
+            ((AsyncSupplier) function).get(callback::accept, errorHandler(routingContext));
         }
         else if (function instanceof AsyncIntFunction) {
-            ((AsyncIntFunction) function).apply(Integer.parseInt(getOnlyValue(routingContext)), callback::accept);
+            ((AsyncIntFunction) function).apply(Integer.parseInt(getOnlyValue(routingContext)), callback::accept, errorHandler(routingContext));
         }
         else {
             throw new UnsupportedOperationException(String.format("Async controller with this arity is not yet implemented: [%s]", function.getClass().getName()));
@@ -77,17 +72,30 @@ public final class GetWithZeroOrOneParameterHandler implements Handler<RoutingCo
     }
 
     private void executeBlockingFunction(RoutingContext routingContext, Consumer<Object> callback) {
-        Object value;
-        if (function instanceof StringFunction) {
-            value = ((StringFunction) function).apply(getOnlyValue(routingContext));
-        } else if (function instanceof Supplier) {
-            value = ((Supplier) function).get();
-        } else if (function instanceof IntFunction) {
-            value = ((IntFunction) function).apply(Integer.parseInt(getOnlyValue(routingContext)));
-        } else {
-            throw new UnsupportedOperationException(String.format("Controller with this arity is not yet implemented: [%s]", function.getClass().getName()));
+        try {
+            Object value;
+            if (function instanceof StringFunction) {
+                value = ((StringFunction) function).apply(getOnlyValue(routingContext));
+            } else if (function instanceof Supplier) {
+                value = ((Supplier) function).get();
+            } else if (function instanceof IntFunction) {
+                value = ((IntFunction) function).apply(Integer.parseInt(getOnlyValue(routingContext)));
+            } else {
+                throw new UnsupportedOperationException(String.format("Controller with this arity is not yet implemented: [%s]", function.getClass().getName()));
+            }
+            callback.accept(value);
+        } catch (Exception throwable) {
+            LOGGER.error(String.format("Invoking controller method failed: [%s]", routingContext.currentRoute().getPath()), throwable);
+            routingContext.fail(500);
         }
-        callback.accept(value);
+    }
+
+    private static Consumer<Throwable> errorHandler(RoutingContext routingContext) {
+        return throwable -> {
+            String path = routingContext.currentRoute() != null ? routingContext.currentRoute().getPath() : null;
+            LOGGER.error(String.format("Invoking controller method failed: [%s]", path), throwable);
+            routingContext.fail(500);
+        };
     }
 
 }

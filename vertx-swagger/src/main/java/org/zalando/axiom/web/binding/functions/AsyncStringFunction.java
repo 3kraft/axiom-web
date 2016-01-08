@@ -4,6 +4,6 @@ import java.util.function.Consumer;
 
 public interface AsyncStringFunction<T> extends Async {
 
-    void apply(String value, Consumer<T> callback);
+    void apply(String value, Consumer<T> callback, Consumer<Throwable> errorHandler);
 
 }

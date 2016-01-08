@@ -4,6 +4,6 @@ import java.util.function.Consumer;
 
 public interface AsyncIntFunction<T> extends Async {
 
-    void apply(Integer value, Consumer<T> callback);
+    void apply(Integer value, Consumer<T> callback, Consumer<Throwable> errorHandler);
 
 }

@@ -16,6 +16,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.zalando.axiom.web.SwaggerRouter;
+import org.zalando.axiom.web.binding.functions.AsyncStringFunction;
 import org.zalando.axiom.web.controller.ProductController;
 import org.zalando.axiom.web.domain.Product;
 import org.zalando.axiom.web.domain.ProductParameter;
@@ -182,19 +183,29 @@ public class GetHandlerTest {
             // @formatter:on
         };
 
-        vertx.deployVerticle(new AbstractVerticle() {
-            @Override
-            public void start(Future<Void> startFuture) throws Exception {
-                vertx.createHttpServer().requestHandler(routerFactory.get()::accept).listen(8080, handler -> {
-                    if (handler.succeeded()) {
-                        request.end();
-                        startFuture.complete();
-                    } else {
-                        throw new IllegalStateException("Server did not start!", handler.cause());
-                    }
-                });
-            }
-        });
+        startServer(request, routerFactory);
+    }
+
+    @Test
+    public void testGetAsyncError(TestContext context) throws Exception {
+        Async async = context.async();
+
+        HttpClientRequest request = setUpGetRequest(vertx, context, async, "/v1/products/3", 500,
+                response -> context.assertEquals(500, response.statusCode()));
+
+        Supplier<Router> routerFactory = () -> {
+            // @formatter:off
+            return SwaggerRouter.swaggerDefinition("/swagger-get-by-id.json")
+                    .getById("/products/:id", (AsyncStringFunction<String>) (value, callback, errorHandler) -> {
+                        new Thread(() -> {
+                            errorHandler.accept(new RuntimeException("Exception!"));
+                        }).start();
+                    })
+                    .router(vertx);
+            // @formatter:on
+        };
+
+        startServer(request, routerFactory);
 
     }
 
@@ -210,5 +221,21 @@ public class GetHandlerTest {
                         context.fail(e);
                     }
                 }));
+    }
+
+    private void startServer(final HttpClientRequest request, final Supplier<Router> routerFactory) {
+        vertx.deployVerticle(new AbstractVerticle() {
+            @Override
+            public void start(Future<Void> startFuture) throws Exception {
+                vertx.createHttpServer().requestHandler(routerFactory.get()::accept).listen(8080, handler -> {
+                    if (handler.succeeded()) {
+                        request.end();
+                        startFuture.complete();
+                    } else {
+                        throw new IllegalStateException("Server did not start!", handler.cause());
+                    }
+                });
+            }
+        });
     }
 }
