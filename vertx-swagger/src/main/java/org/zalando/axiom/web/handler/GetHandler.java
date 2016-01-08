@@ -8,11 +8,8 @@ import io.swagger.models.Path;
 import io.swagger.models.parameters.AbstractParameter;
 import io.swagger.models.parameters.AbstractSerializableParameter;
 import io.swagger.models.parameters.Parameter;
-import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.ext.web.RoutingContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.zalando.axiom.web.binding.functions.AsyncFunction;
 import org.zalando.axiom.web.util.Types;
 
@@ -33,9 +30,7 @@ import static org.zalando.axiom.web.util.Preconditions.checkNotNull;
 import static org.zalando.axiom.web.util.Strings.getSetterName;
 import static org.zalando.axiom.web.util.Types.castValueToType;
 
-public class GetHandler<T> implements Handler<RoutingContext> {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(GetWithZeroOrOneParameterHandler.class);
+public class GetHandler<T> extends DefaultRouteHandler {
 
     private final ObjectMapper mapper;
 
@@ -67,7 +62,7 @@ public class GetHandler<T> implements Handler<RoutingContext> {
             } else {
                 parameter = fillParameterWithNonDefaultConstructor(paramType, params);
             }
-            executeFunction(parameter, result -> {
+            executeFunction(parameter, routingContext, result -> {
                 try {
                     if (result == null) {
                         routingContext.response().setStatusCode(404).end();
@@ -75,18 +70,18 @@ public class GetHandler<T> implements Handler<RoutingContext> {
                         routingContext.response().setStatusCode(200).end(mapper.writeValueAsString(result));
                     }
                 } catch (JsonProcessingException e) {
-                    fail(String.format("Could not serialize result [%s]!", result.getClass().getName()), e, routingContext);
+                    handleError(String.format("Could not serialize result [%s]!", result.getClass().getName()), e, routingContext);
                 }
             });
         } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
-            fail("Error occurred on calling controller method!", e, routingContext);
+            handleControllerError(routingContext, e);
         }
     }
 
     @SuppressWarnings("unchecked")
-    private void executeFunction(Object parameter, Consumer<Object> callback) {
+    private void executeFunction(Object parameter, RoutingContext routingContext, Consumer<Object> callback) {
         if (function instanceof AsyncFunction) {
-            ((AsyncFunction) function).apply(parameter, callback);
+            ((AsyncFunction) function).apply(parameter, defaultAsyncResultHandler(routingContext, callback));
         }
         else if (function instanceof Function) {
             Object result = ((Function) function).apply(parameter);
@@ -126,9 +121,9 @@ public class GetHandler<T> implements Handler<RoutingContext> {
                 MethodHandle setter = lookup.findVirtual(paramType, getSetterName(name), MethodType.methodType(void.class, type));
                 setter.invokeWithArguments(parameter, castValueToType(getSingleValue(name, params), type));
             } catch (NoSuchFieldException e) {
-                fail(String.format("Could not find setter for field [%s]", name), e, routingContext);
+                handleError(String.format("Could not find setter for field [%s]", name), e, routingContext);
             } catch (Throwable throwable) {
-                fail(String.format("Could not invoke setter for field [%s]!", name), throwable, routingContext);
+                handleError(String.format("Could not invoke setter for field [%s]!", name), throwable, routingContext);
             }
         }
         return parameter;
@@ -149,11 +144,6 @@ public class GetHandler<T> implements Handler<RoutingContext> {
             }
         }
         return false;
-    }
-
-    private void fail(String message, Throwable throwable, RoutingContext routingContext) {
-        LOGGER.error(message, throwable);
-        routingContext.fail(500);
     }
 
     private String getSingleValue(String name, MultiMap params) {

@@ -1,6 +1,8 @@
 package org.zalando.axiom.web.controller;
 
 
+import io.vertx.core.AsyncResultHandler;
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import org.zalando.axiom.web.domain.Product;
 import org.zalando.axiom.web.domain.ProductParameter;
@@ -10,7 +12,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Consumer;
 
 public class ProductController {
 
@@ -50,28 +51,31 @@ public class ProductController {
         products.remove(id);
     }
 
-    public void getAsync(String id, Consumer<Product> callback, Consumer<Throwable> errorHandler) {
+    public void getAsync(String id, AsyncResultHandler<Product> handler) {
         vertx.executeBlocking(event -> {
             Product product = getById(id);
-            callback.accept(product);
+            handler.handle(Future.succeededFuture(product));
             event.complete();
         }, event -> {
             if (event.failed()) {
-                errorHandler.accept(event.cause());
+                handler.handle(Future.failedFuture(event.cause()));
             }
         });
-
     }
 
-    public void addProductAsync(Product product, Consumer<Product> callback) {
+    public void addProductAsync(Product product, AsyncResultHandler<Product> handler) {
         if (product.getId() == null) {
             product.setId(UUID.randomUUID().toString());
         }
         products.put(product.getId(), product);
         vertx.executeBlocking(event -> {
-            callback.accept(addProduct(product));
+            handler.handle(Future.succeededFuture(addProduct(product)));
             event.complete();
-        }, event -> {});
+        }, event -> {
+            if (event.failed()) {
+                handler.handle(Future.failedFuture(event.cause()));
+            }
+        });
     }
 
 

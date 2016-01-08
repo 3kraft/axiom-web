@@ -42,7 +42,7 @@ public class BindingBuilderFactory {
         return new DefaultBindingBuilder(this, swaggerRouter, path);
     }
 
-    public <T> BindingBuilderFactory get(String path, Supplier<T> supplier) {
+    public BindingBuilderFactory get(String path, Supplier<Object> supplier) {
         getBindingBuilder(path).get(supplier).doBind();
         return this;
     }
@@ -57,17 +57,17 @@ public class BindingBuilderFactory {
         return this;
     }
 
-    public <T> BindingBuilderFactory get(String path, StringFunction<T> supplier) {
+    public BindingBuilderFactory get(String path, StringFunction<Object> supplier) {
         getBindingBuilder(path).get(supplier).doBind();
         return this;
     }
 
-    public <T> BindingBuilderFactory get(String path, AsyncStringFunction<T> supplier) {
+    public BindingBuilderFactory get(String path, AsyncStringFunction<Object> supplier) {
         getBindingBuilder(path).get(supplier).doBind();
         return this;
     }
 
-    public <T> BindingBuilderFactory get(String path, AsyncIntFunction<T> supplier) {
+    public BindingBuilderFactory get(String path, AsyncIntFunction<Object> supplier) {
         getBindingBuilder(path).get(supplier).doBind();
         return this;
     }

@@ -2,10 +2,8 @@ package org.zalando.axiom.web.handler;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.vertx.core.Handler;
+import io.vertx.core.AsyncResultHandler;
 import io.vertx.ext.web.RoutingContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.zalando.axiom.web.binding.functions.Async;
 import org.zalando.axiom.web.binding.functions.AsyncIntFunction;
 import org.zalando.axiom.web.binding.functions.AsyncStringFunction;
@@ -18,9 +16,7 @@ import java.util.function.Supplier;
 
 import static org.zalando.axiom.web.util.HandlerUtils.getOnlyValue;
 
-public final class GetWithZeroOrOneParameterHandler implements Handler<RoutingContext> {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(GetWithZeroOrOneParameterHandler.class);
+public final class GetWithZeroOrOneParameterHandler extends DefaultRouteHandler {
 
     private final ObjectMapper mapper;
 
@@ -39,8 +35,7 @@ public final class GetWithZeroOrOneParameterHandler implements Handler<RoutingCo
                     try {
                         routingContext.response().setStatusCode(200).end(mapper.writeValueAsString(value));
                     } catch (JsonProcessingException e) {
-                        LOGGER.error(String.format("Could not serialize result [%s]!", routingContext.currentRoute().getPath()), e);
-                        routingContext.fail(500);
+                        handleError(String.format("Could not serialize result [%s]!", routingContext.currentRoute().getPath()), e, routingContext);
                     }
                 }
         });
@@ -48,7 +43,7 @@ public final class GetWithZeroOrOneParameterHandler implements Handler<RoutingCo
 
     private void executeFunction(RoutingContext routingContext, Consumer<Object> callback) {
             if (function instanceof Async) {
-                executeAsyncFunction(routingContext, callback);
+                executeAsyncFunction(routingContext, defaultAsyncResultHandler(routingContext, callback));
             }
             else {
                 executeBlockingFunction(routingContext, callback);
@@ -56,15 +51,15 @@ public final class GetWithZeroOrOneParameterHandler implements Handler<RoutingCo
     }
 
     @SuppressWarnings("unchecked") // async functions with generic consumers cause not nice warnings
-    private void executeAsyncFunction(RoutingContext routingContext, Consumer<Object> callback) {
+    private <T> void executeAsyncFunction(RoutingContext routingContext, AsyncResultHandler<T> handler) {
         if (function instanceof AsyncStringFunction) {
-            ((AsyncStringFunction) this.function).apply(getOnlyValue(routingContext), callback::accept, errorHandler(routingContext));
+            ((AsyncStringFunction) this.function).apply(getOnlyValue(routingContext), handler);
         }
         else if (function instanceof AsyncSupplier) {
-            ((AsyncSupplier) function).get(callback::accept, errorHandler(routingContext));
+            ((AsyncSupplier) function).get(handler);
         }
         else if (function instanceof AsyncIntFunction) {
-            ((AsyncIntFunction) function).apply(Integer.parseInt(getOnlyValue(routingContext)), callback::accept, errorHandler(routingContext));
+            ((AsyncIntFunction) function).apply(Integer.parseInt(getOnlyValue(routingContext)), handler);
         }
         else {
             throw new UnsupportedOperationException(String.format("Async controller with this arity is not yet implemented: [%s]", function.getClass().getName()));
@@ -85,17 +80,9 @@ public final class GetWithZeroOrOneParameterHandler implements Handler<RoutingCo
             }
             callback.accept(value);
         } catch (Exception throwable) {
-            LOGGER.error(String.format("Invoking controller method failed: [%s]", routingContext.currentRoute().getPath()), throwable);
-            routingContext.fail(500);
+            handleControllerError(routingContext, throwable);
         }
     }
 
-    private static Consumer<Throwable> errorHandler(RoutingContext routingContext) {
-        return throwable -> {
-            String path = routingContext.currentRoute() != null ? routingContext.currentRoute().getPath() : null;
-            LOGGER.error(String.format("Invoking controller method failed: [%s]", path), throwable);
-            routingContext.fail(500);
-        };
-    }
 
 }

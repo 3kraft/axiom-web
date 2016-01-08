@@ -196,9 +196,9 @@ public class GetHandlerTest {
         Supplier<Router> routerFactory = () -> {
             // @formatter:off
             return SwaggerRouter.swaggerDefinition("/swagger-get-by-id.json")
-                    .getById("/products/:id", (AsyncStringFunction<String>) (value, callback, errorHandler) -> {
+                    .getById("/products/:id", (AsyncStringFunction<String>) (value, handler) -> {
                         new Thread(() -> {
-                            errorHandler.accept(new RuntimeException("Exception!"));
+                            handler.handle(Future.failedFuture(new RuntimeException("Exception!")));
                         }).start();
                     })
                     .router(vertx);

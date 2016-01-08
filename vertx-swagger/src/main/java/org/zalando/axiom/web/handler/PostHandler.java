@@ -2,7 +2,6 @@ package org.zalando.axiom.web.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.models.Operation;
-import io.vertx.core.Handler;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
@@ -18,7 +17,7 @@ import java.util.function.Function;
 
 import static org.zalando.axiom.web.util.Preconditions.checkNotNull;
 
-public class PostHandler<T> implements Handler<RoutingContext> {
+public class PostHandler<T> extends DefaultRouteHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PostHandler.class);
 
@@ -55,7 +54,7 @@ public class PostHandler<T> implements Handler<RoutingContext> {
     private void executeFunction(RoutingContext routingContext, String bodyAsJson, Consumer<Object> callback) {
         try {
             if (function instanceof AsyncConsumer) {
-                ((AsyncConsumer) function).accept(mapper.readValue(bodyAsJson, paramType), callback);
+                ((AsyncConsumer) function).accept(mapper.readValue(bodyAsJson, paramType), defaultAsyncResultHandler(routingContext, callback));
             }
             else if (function instanceof Function) {
                 Object id = ((Function) function).apply(mapper.readValue(bodyAsJson, paramType));
