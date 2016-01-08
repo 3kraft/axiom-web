@@ -8,13 +8,13 @@ buildscript {
 apply plugin: 'java'
 compileJava {
     group = 'org.zalando'
-    version = '0.2.0'
+    version = '0.2.1'
     sourceCompatibility = '1.8'
 }
 
 apply plugin: 'findbugs'
 apply plugin: 'maven'
-//apply plugin: 'signing'
+apply plugin: 'signing'
 
 jar {
     manifest {
@@ -43,9 +43,9 @@ artifacts {
     archives sourcesJar
 }
 
-//signing {
-//    sign configurations.archives
-//}
+signing {
+    sign configurations.archives
+}
 
 test {
     testLogging {
@@ -103,7 +103,7 @@ task wrapper(type: Wrapper) {
 uploadArchives {
     repositories {
         mavenDeployer {
-            //beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
             repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
               authentication(userName: sonatypeUsername, password: sonatypePassword)
