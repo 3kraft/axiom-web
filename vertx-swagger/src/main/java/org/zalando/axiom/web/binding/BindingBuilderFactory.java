@@ -9,7 +9,9 @@ import io.vertx.ext.web.RoutingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zalando.axiom.web.SwaggerRouter;
+import org.zalando.axiom.web.binding.functions.AsyncIntFunction;
 import org.zalando.axiom.web.binding.functions.AsyncStringFunction;
+import org.zalando.axiom.web.binding.functions.AsyncSupplier;
 import org.zalando.axiom.web.binding.functions.StringFunction;
 import org.zalando.axiom.web.util.Strings;
 
@@ -45,17 +47,42 @@ public class BindingBuilderFactory {
         return this;
     }
 
+    public <T> BindingBuilderFactory get(String path, AsyncSupplier<T> supplier) {
+        getBindingBuilder(path).get(supplier).doBind();
+        return this;
+    }
+
     public <T, R> BindingBuilderFactory get(String path, Class<T> paramType, Function<T, R> function) {
         getBindingBuilder(path).get(paramType, function).doBind();
         return this;
     }
 
-    public BindingBuilderFactory getById(String path, StringFunction<Object> supplier) {
+    public BindingBuilderFactory get(String path, StringFunction<Object> supplier) {
+        getBindingBuilder(path).get(supplier).doBind();
+        return this;
+    }
+
+    public BindingBuilderFactory get(String path, AsyncStringFunction<Object> supplier) {
+        getBindingBuilder(path).get(supplier).doBind();
+        return this;
+    }
+
+    public BindingBuilderFactory get(String path, AsyncIntFunction<Object> supplier) {
+        getBindingBuilder(path).get(supplier).doBind();
+        return this;
+    }
+
+    public <T> BindingBuilderFactory getById(String path, StringFunction<T> supplier) {
         getBindingBuilder(path).get(supplier).doBind();
         return this;
     }
 
     public <T> BindingBuilderFactory getById(String path, AsyncStringFunction<T> supplier) {
+        getBindingBuilder(path).get(supplier).doBind();
+        return this;
+    }
+
+    public <T> BindingBuilderFactory getById(String path, AsyncIntFunction<T> supplier) {
         getBindingBuilder(path).get(supplier).doBind();
         return this;
     }

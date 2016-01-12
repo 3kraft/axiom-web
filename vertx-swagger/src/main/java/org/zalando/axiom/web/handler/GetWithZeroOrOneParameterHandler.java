@@ -2,10 +2,8 @@ package org.zalando.axiom.web.handler;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.vertx.core.Handler;
+import io.vertx.core.AsyncResultHandler;
 import io.vertx.ext.web.RoutingContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.zalando.axiom.web.binding.functions.Async;
 import org.zalando.axiom.web.binding.functions.AsyncIntFunction;
 import org.zalando.axiom.web.binding.functions.AsyncStringFunction;
@@ -18,9 +16,7 @@ import java.util.function.Supplier;
 
 import static org.zalando.axiom.web.util.HandlerUtils.getOnlyValue;
 
-public final class GetWithZeroOrOneParameterHandler implements Handler<RoutingContext> {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(GetWithZeroOrOneParameterHandler.class);
+public final class GetWithZeroOrOneParameterHandler extends DefaultRouteHandler {
 
     private final ObjectMapper mapper;
 
@@ -39,36 +35,31 @@ public final class GetWithZeroOrOneParameterHandler implements Handler<RoutingCo
                     try {
                         routingContext.response().setStatusCode(200).end(mapper.writeValueAsString(value));
                     } catch (JsonProcessingException e) {
-                        throw new RuntimeException(String.format("Failed to write json value as string: %s", value),e);
+                        handleError(String.format("Could not serialize result [%s]!", routingContext.currentRoute().getPath()), e, routingContext);
                     }
                 }
         });
     }
 
     private void executeFunction(RoutingContext routingContext, Consumer<Object> callback) {
-        try {
             if (function instanceof Async) {
-                executeAsyncFunction(routingContext, callback);
+                executeAsyncFunction(routingContext, defaultAsyncResultHandler(routingContext, callback));
             }
             else {
                 executeBlockingFunction(routingContext, callback);
             }
-        } catch (Exception throwable) {
-            LOGGER.error(String.format("Invoking controller method failed: [%s]", routingContext.currentRoute().getPath()), throwable);
-            routingContext.fail(500);
-        }
     }
 
     @SuppressWarnings("unchecked") // async functions with generic consumers cause not nice warnings
-    private void executeAsyncFunction(RoutingContext routingContext, Consumer<Object> callback) {
+    private <T> void executeAsyncFunction(RoutingContext routingContext, AsyncResultHandler<T> handler) {
         if (function instanceof AsyncStringFunction) {
-            ((AsyncStringFunction) this.function).apply(getOnlyValue(routingContext), callback::accept);
+            ((AsyncStringFunction) this.function).apply(getOnlyValue(routingContext), handler);
         }
         else if (function instanceof AsyncSupplier) {
-            ((AsyncSupplier) function).get(callback::accept);
+            ((AsyncSupplier) function).get(handler);
         }
         else if (function instanceof AsyncIntFunction) {
-            ((AsyncIntFunction) function).apply(Integer.parseInt(getOnlyValue(routingContext)), callback::accept);
+            ((AsyncIntFunction) function).apply(Integer.parseInt(getOnlyValue(routingContext)), handler);
         }
         else {
             throw new UnsupportedOperationException(String.format("Async controller with this arity is not yet implemented: [%s]", function.getClass().getName()));
@@ -76,17 +67,22 @@ public final class GetWithZeroOrOneParameterHandler implements Handler<RoutingCo
     }
 
     private void executeBlockingFunction(RoutingContext routingContext, Consumer<Object> callback) {
-        Object value;
-        if (function instanceof StringFunction) {
-            value = ((StringFunction) function).apply(getOnlyValue(routingContext));
-        } else if (function instanceof Supplier) {
-            value = ((Supplier) function).get();
-        } else if (function instanceof IntFunction) {
-            value = ((IntFunction) function).apply(Integer.parseInt(getOnlyValue(routingContext)));
-        } else {
-            throw new UnsupportedOperationException(String.format("Controller with this arity is not yet implemented: [%s]", function.getClass().getName()));
+        try {
+            Object value;
+            if (function instanceof StringFunction) {
+                value = ((StringFunction) function).apply(getOnlyValue(routingContext));
+            } else if (function instanceof Supplier) {
+                value = ((Supplier) function).get();
+            } else if (function instanceof IntFunction) {
+                value = ((IntFunction) function).apply(Integer.parseInt(getOnlyValue(routingContext)));
+            } else {
+                throw new UnsupportedOperationException(String.format("Controller with this arity is not yet implemented: [%s]", function.getClass().getName()));
+            }
+            callback.accept(value);
+        } catch (Exception throwable) {
+            handleControllerError(routingContext, throwable);
         }
-        callback.accept(value);
     }
+
 
 }
