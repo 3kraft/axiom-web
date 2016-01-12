@@ -8,13 +8,11 @@ buildscript {
 def projectName = 'Axiom Web Vertx Swagger'
 
 group = 'org.zalando'
-version = '0.1.0'
+version = '0.2.0'
 description = 'The vertx swagger integration library creates vertx-web bindings using a swagger definition file.'
 
 apply plugin: 'java'
 compileJava {
-    group = project.group
-    version = project.version
     sourceCompatibility = '1.8'
 }
 

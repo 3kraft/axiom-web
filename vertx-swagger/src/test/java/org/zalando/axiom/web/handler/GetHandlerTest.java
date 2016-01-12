@@ -3,11 +3,14 @@ package org.zalando.axiom.web.handler;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import io.vertx.ext.web.Router;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -20,6 +23,7 @@ import org.zalando.axiom.web.domain.ProductParameterNoDefaultCtx;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.function.Supplier;
 
 import static org.zalando.axiom.web.util.Data.productController;
 import static org.zalando.axiom.web.util.VertxUtils.setUpGetRequest;
@@ -72,7 +76,7 @@ public class GetHandlerTest {
     }
 
     private void testGetTwoParams(TestContext context, String uriWithParams, String vertxPath, String swaggerJson, int expectedStatusCode) {
-        ProductController controller = productController(1);
+        ProductController controller = productController(vertx, 1);
 
         Async async = context.async();
 
@@ -106,7 +110,7 @@ public class GetHandlerTest {
 
     @Test
     public void testGetWithParamObjectWithNoDefaultConstructor(TestContext context) throws Exception {
-        ProductController controller = productController(1);
+        ProductController controller = productController(vertx, 1);
 
         Async async = context.async();
 
@@ -126,7 +130,7 @@ public class GetHandlerTest {
     @Test
     public void testGetById(TestContext context) throws Exception {
         int productCount = 5;
-        ProductController controller = productController(productCount);
+        ProductController controller = productController(vertx, productCount);
 
         Async async = context.async();
 
@@ -146,7 +150,7 @@ public class GetHandlerTest {
     @Test
     public void testGetByIdShortHand(TestContext context) throws Exception {
         int productCount = 5;
-        ProductController controller = productController(productCount);
+        ProductController controller = productController(vertx, productCount);
 
         Async async = context.async();
 
@@ -159,6 +163,39 @@ public class GetHandlerTest {
                     .router(vertx);
             // @formatter:on
         });
+    }
+
+    @Test
+    public void testGetAsync(TestContext context) throws Exception {
+
+        Async async = context.async();
+
+        ProductController controller = productController(vertx, 5);
+
+        HttpClientRequest request = getHttpClientRequestForGetById(context, controller, async);
+
+        Supplier<Router> routerFactory = () -> {
+            // @formatter:off
+            return SwaggerRouter.swaggerDefinition("/swagger-get-by-id.json")
+                    .getById("/products/:id", controller::getAsync)
+                    .router(vertx);
+            // @formatter:on
+        };
+
+        vertx.deployVerticle(new AbstractVerticle() {
+            @Override
+            public void start(Future<Void> startFuture) throws Exception {
+                vertx.createHttpServer().requestHandler(routerFactory.get()::accept).listen(8080, handler -> {
+                    if (handler.succeeded()) {
+                        request.end();
+                        startFuture.complete();
+                    } else {
+                        throw new IllegalStateException("Server did not start!", handler.cause());
+                    }
+                });
+            }
+        });
+
     }
 
     private HttpClientRequest getHttpClientRequestForGetById(TestContext context, ProductController controller, Async async) {
