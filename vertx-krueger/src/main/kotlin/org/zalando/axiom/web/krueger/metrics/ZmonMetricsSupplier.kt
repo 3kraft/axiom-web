@@ -4,7 +4,9 @@ import com.codahale.metrics.MetricRegistry
 import org.apache.commons.lang.StringUtils
 import org.zalando.axiom.web.krueger.flatten
 
-
+/**
+ * Exposes metrics that could be used by Zmon (https://github.com/zalando/zmon)
+ */
 public class ZmonMetricsSupplier(val metricsRegistry: MetricRegistry) : AppMetricsSupplier {
 
     override fun supply(): Map<String, Number> {
