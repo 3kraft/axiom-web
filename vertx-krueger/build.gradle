@@ -1,0 +1,144 @@
+buildscript {
+    repositories {
+        jcenter()
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.0.0-beta-4584"
+    }
+}
+
+group = 'org.zalando'
+version = '1.0.0-SNAPSHOT'
+
+apply plugin: 'kotlin'
+apply plugin: 'findbugs'
+apply plugin: 'maven'
+apply plugin: 'signing'
+
+
+repositories {
+    mavenCentral()
+    maven {
+        url = "http://oss.sonatype.org/content/repositories/snapshots/"
+    }
+    mavenLocal()
+}
+
+jar {
+    manifest {
+        attributes(
+                "Implementation-Title": "axiom.web.vertx-krueger",
+                "Implementation-Version": version,
+                "Implementation-Vendor": "Zalando SE"
+        )
+    }
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from tasks.javadoc.destinationDir
+}
+
+task sourcesJar(type: Jar) {
+    from sourceSets.main.allSource
+    classifier = 'sources'
+}
+
+artifacts {
+    archives jar
+    archives javadocJar
+    archives sourcesJar
+}
+
+signing {
+    required { !version.endsWith("SNAPSHOT") }
+    sign configurations.archives
+}
+
+test {
+    testLogging {
+        showStandardStreams = true
+        events = ["standard_out"]
+        showExceptions = true
+        exceptionFormat = "full"
+
+        debug {
+            events = ["started", "skipped", "failed", "standard_out"]
+            exceptionFormat = "full"
+        }
+
+        error {
+            events = ["started", "skipped", "failed", "standard_out"]
+            exceptionFormat = "full"
+        }
+    }
+}
+
+if (!JavaVersion.current().java8Compatible) {
+    throw new IllegalStateException("Java 8 needed!".stripMargin())
+}
+
+dependencies {
+    compile "org.jetbrains.kotlin:kotlin-stdlib:1.0.0-beta-4584"
+    compile "org.zalando:vertx-swagger:0.2.1"
+    compile "io.vertx:vertx-web:3.1.0"
+    compile "org.slf4j:slf4j-api:1.7.13"
+    compile "io.vertx:vertx-dropwizard-metrics:3.1.0"
+    compile "org.apache.logging.log4j:log4j:2.4.1"
+    compile "org.apache.logging.log4j:log4j-api:2.4.1"
+    compile "org.apache.logging.log4j:log4j-core:2.4.1"
+    compile "org.apache.logging.log4j:log4j-slf4j-impl:2.4.1"
+    testCompile "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.6.0"
+    testCompile "junit:junit:4.12"
+    testCompile "io.vertx:vertx-unit:3.1.0"
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = "2.9"
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+              authentication(userName: sonatypeUsername, password: sonatypePassword)
+            }
+
+            pom.project {
+               name 'Axiom Web Vertx Krueger'
+               packaging 'jar'
+               description 'This library creates vertx web endpoints exposing application metrics that can be consumed by Krueger (https://github.com/zalando/krueger-cockpit)'
+               url 'https://github.com/zalando/axiom-web'
+
+               scm {
+                   url 'scm:git@git@github.com:zalando/axiom-web.git'
+                   connection 'scm:git@git@github.com:zalando/axiom-web.git'
+                   developerConnection 'scm:git@git@github.com:zalando/axiom-web.git'
+               }
+
+               licenses {
+                   license {
+                       name 'The MIT License (MIT)'
+                       url 'https://opensource.org/licenses/MIT'
+                       distribution 'repo'
+                   }
+               }
+
+               developers {
+                   developer {
+                       id 'teppel'
+                       name 'Tamas Eppel'
+                   }
+               }
+           }
+        }
+    }
+}
+
+defaultTasks 'clean', 'test', 'findbugsMain', 'build'
+sourceSets {
+    main.java.srcDirs += 'src/main/kotlin'
+}
