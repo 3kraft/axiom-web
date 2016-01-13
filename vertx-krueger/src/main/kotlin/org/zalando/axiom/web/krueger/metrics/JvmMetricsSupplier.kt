@@ -12,7 +12,7 @@ public class JvmMetricsSupplier(val appStart: Long= System.currentTimeMillis()) 
 
      */
     override fun supply(): Map<String, Number> {
-        val values = sortedMapOf<String, Number>()
+        val values = hashMapOf<String, Number>()
         val runtime = Runtime.getRuntime()
         val classLoadingMxBean = ManagementFactory.getClassLoadingMXBean()
         val memoryUsage = ManagementFactory.getMemoryMXBean().heapMemoryUsage;
