@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpClientRequest;
+import io.vertx.core.http.HttpServer;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -16,6 +16,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.zalando.axiom.web.SwaggerRouter;
+import org.zalando.axiom.web.binding.functions.AsyncFunction;
 import org.zalando.axiom.web.binding.functions.AsyncStringFunction;
 import org.zalando.axiom.web.controller.ProductController;
 import org.zalando.axiom.web.domain.Product;
@@ -23,6 +24,7 @@ import org.zalando.axiom.web.domain.ProductParameter;
 import org.zalando.axiom.web.domain.ProductParameterNoDefaultCtx;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -81,20 +83,20 @@ public class GetHandlerTest {
 
         Async async = context.async();
 
-        HttpClientRequest request = getHttpClientRequest(context, uriWithParams, controller, async, expectedStatusCode);
+        TestCoordinator coordinator = getHttpClientRequest(context, uriWithParams, controller, async, expectedStatusCode);
 
-        startHttpServer(vertx, request, () -> {
+        startHttpServer(vertx, coordinator, () -> {
             // @formatter:off
             return SwaggerRouter.swaggerDefinition(swaggerJson)
                     .bindTo(vertxPath)
-                        .get(ProductParameter.class, controller::get)
+                        .get(ProductParameter.class, (AsyncFunction<ProductParameter, Collection<Product>>)controller::getAsync)
                         .doBind()
                     .router(vertx);
             // @formatter:on
         });
     }
 
-    private HttpClientRequest getHttpClientRequest(TestContext context, String uriWithParams, ProductController controller, Async async, int expectedStatusCode) {
+    private TestCoordinator getHttpClientRequest(TestContext context, String uriWithParams, ProductController controller, Async async, int expectedStatusCode) {
         return setUpGetRequest(vertx, context, async, uriWithParams, expectedStatusCode,
                 response -> response.bodyHandler(body -> {
                     try {
@@ -115,13 +117,13 @@ public class GetHandlerTest {
 
         Async async = context.async();
 
-        HttpClientRequest request = getHttpClientRequest(context, "/v1/products?latitude=1.2&longitude=1.3", controller, async, 200);
+        TestCoordinator coordinator = getHttpClientRequest(context, "/v1/products?latitude=1.2&longitude=1.3", controller, async, 200);
 
-        startHttpServer(vertx, request, () -> {
+        startHttpServer(vertx, coordinator, () -> {
             // @formatter:off
             return SwaggerRouter.swaggerDefinition("/swagger-get-two-query-params.json")
                     .bindTo("/products")
-                        .get(ProductParameterNoDefaultCtx.class, controller::get)
+                        .get(ProductParameterNoDefaultCtx.class, (AsyncFunction<ProductParameterNoDefaultCtx, Collection<Product>>)controller::getAsync)
                         .doBind()
                     .router(vertx);
             // @formatter:on
@@ -135,13 +137,13 @@ public class GetHandlerTest {
 
         Async async = context.async();
 
-        HttpClientRequest request = getHttpClientRequestForGetById(context, controller, async);
+        TestCoordinator coordinator = getHttpClientRequestForGetById(context, controller, async);
 
-        startHttpServer(vertx, request, () -> {
+        startHttpServer(vertx, coordinator, () -> {
             // @formatter:off
             return SwaggerRouter.swaggerDefinition("/swagger-get-by-id.json")
                     .bindTo("/products/:id")
-                        .get(controller::getById)
+                        .get(controller::getByIdAsync)
                         .doBind()
                     .router(vertx);
             // @formatter:on
@@ -155,42 +157,22 @@ public class GetHandlerTest {
 
         Async async = context.async();
 
-        HttpClientRequest request = getHttpClientRequestForGetById(context, controller, async);
+        TestCoordinator coordinator = getHttpClientRequestForGetById(context, controller, async);
 
-        startHttpServer(vertx, request, () -> {
+        startHttpServer(vertx, coordinator, () -> {
             // @formatter:off
             return SwaggerRouter.swaggerDefinition("/swagger-get-by-id.json")
-                    .getById("/products/:id", controller::getById)
+                    .getById("/products/:id", controller::getByIdAsync)
                     .router(vertx);
             // @formatter:on
         });
     }
 
     @Test
-    public void testGetAsync(TestContext context) throws Exception {
-
-        Async async = context.async();
-
-        ProductController controller = productController(vertx, 5);
-
-        HttpClientRequest request = getHttpClientRequestForGetById(context, controller, async);
-
-        Supplier<Router> routerFactory = () -> {
-            // @formatter:off
-            return SwaggerRouter.swaggerDefinition("/swagger-get-by-id.json")
-                    .getById("/products/:id", controller::getAsync)
-                    .router(vertx);
-            // @formatter:on
-        };
-
-        startServer(request, routerFactory);
-    }
-
-    @Test
     public void testGetAsyncError(TestContext context) throws Exception {
         Async async = context.async();
 
-        HttpClientRequest request = setUpGetRequest(vertx, context, async, "/v1/products/3", 500,
+        TestCoordinator coordinator = setUpGetRequest(vertx, context, async, "/v1/products/3", 500,
                 response -> context.assertEquals(500, response.statusCode()));
 
         Supplier<Router> routerFactory = () -> {
@@ -205,11 +187,11 @@ public class GetHandlerTest {
             // @formatter:on
         };
 
-        startServer(request, routerFactory);
+        startServer(coordinator, routerFactory);
 
     }
 
-    private HttpClientRequest getHttpClientRequestForGetById(TestContext context, ProductController controller, Async async) {
+    private TestCoordinator getHttpClientRequestForGetById(TestContext context, ProductController controller, Async async) {
         String id = "3";
         return setUpGetRequest(vertx, context, async, "/v1/products/" + id, 200,
                 response -> response.bodyHandler(body -> {
@@ -223,13 +205,14 @@ public class GetHandlerTest {
                 }));
     }
 
-    private void startServer(final HttpClientRequest request, final Supplier<Router> routerFactory) {
+    private void startServer(final TestCoordinator coordinator, final Supplier<Router> routerFactory) {
         vertx.deployVerticle(new AbstractVerticle() {
             @Override
             public void start(Future<Void> startFuture) throws Exception {
-                vertx.createHttpServer().requestHandler(routerFactory.get()::accept).listen(8080, handler -> {
+                HttpServer server = vertx.createHttpServer();
+                server.requestHandler(routerFactory.get()::accept).listen(8080, handler -> {
                     if (handler.succeeded()) {
-                        request.end();
+                        coordinator.startRequest(server);
                         startFuture.complete();
                     } else {
                         throw new IllegalStateException("Server did not start!", handler.cause());

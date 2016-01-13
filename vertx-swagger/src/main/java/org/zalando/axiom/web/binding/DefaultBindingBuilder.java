@@ -17,8 +17,6 @@ import org.zalando.axiom.web.util.Preconditions;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.IntFunction;
-import java.util.function.Supplier;
 
 public class DefaultBindingBuilder implements BindingBuilder {
 
@@ -41,39 +39,18 @@ public class DefaultBindingBuilder implements BindingBuilder {
         this.operationMap = swaggerPath.getOperationMap();
     }
 
-    public <T> DefaultBindingBuilder get(Supplier<T> function) {
-        get((Object) function);
-        return this;
-    }
-
-    public <T> DefaultBindingBuilder get(StringFunction<T> function) {
-        get((Object) function);
-        return this;
-    }
-
-    public <T> DefaultBindingBuilder get(IntFunction<T> function) {
-        get((Object) function);
-        return this;
-    }
-
     public <T> DefaultBindingBuilder get(AsyncStringFunction<T> function) {
-        get((Object) function);
+        get((Async) function);
         return this;
     }
 
     public <T> DefaultBindingBuilder get(AsyncIntFunction<T> function) {
-        get((Object) function);
+        get((Async) function);
         return this;
     }
 
     public <T> DefaultBindingBuilder get(AsyncSupplier<T> function) {
-        get((Object) function);
-        return this;
-    }
-
-    public <T, R> DefaultBindingBuilder get(Class<T> paramType, Function<T, R> function) {
-        routeConfiguration.addHandler(HttpMethod.GET, new ParameterCheckHandler(operationMap.get(io.swagger.models.HttpMethod.GET)));
-        routeConfiguration.addHandler(HttpMethod.GET, toMetricsHandler(new GetHandler<>(swaggerRouter.getMapper(), function, paramType, swaggerRouter.getSwagger().getPath(routeConfiguration.getSwaggerPath()))));
+        get((Async) function);
         return this;
     }
 
@@ -95,15 +72,9 @@ public class DefaultBindingBuilder implements BindingBuilder {
         return this;
     }
 
-    private DefaultBindingBuilder get(Object function) {
+    private DefaultBindingBuilder get(Async function) {
         routeConfiguration.addHandler(HttpMethod.GET, new ParameterCheckHandler(operationMap.get(io.swagger.models.HttpMethod.GET)));
         routeConfiguration.addHandler(HttpMethod.GET, toMetricsHandler(new GetWithZeroOrOneParameterHandler(swaggerRouter.getMapper(), function)));
-        return this;
-    }
-
-    public <T, R> DefaultBindingBuilder post(Class<T> paramType, Function<T, R> function) {
-        Operation postOperation = swaggerRouter.getSwagger().getPath(routeConfiguration.getSwaggerPath()).getPost();
-        routeConfiguration.addHandler(HttpMethod.POST, toMetricsHandler(new PostHandler<>(postOperation, swaggerRouter.getMapper(), function, paramType)));
         return this;
     }
 
@@ -113,6 +84,7 @@ public class DefaultBindingBuilder implements BindingBuilder {
         return this;
     }
 
+    // FIXME implement async delete
     public DefaultBindingBuilder delete(Consumer<String> function) {
         routeConfiguration.addHandler(HttpMethod.DELETE, toMetricsHandler(new DeleteHandler(function)));
         return this;

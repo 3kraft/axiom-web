@@ -3,6 +3,7 @@ package org.zalando.axiom.web;
 import io.vertx.core.Vertx;
 import org.junit.Before;
 import org.junit.Test;
+import org.zalando.axiom.web.binding.functions.AsyncConsumer;
 import org.zalando.axiom.web.controller.ProductController;
 import org.zalando.axiom.web.domain.Product;
 
@@ -20,10 +21,10 @@ public class ValidationsTest {
         ProductController controller = new ProductController(vertx);
         SwaggerRouter.swaggerDefinition("/swagger-post.json")
                         .bindTo("/products")
-                            .post(Product.class, controller::create)
+                            .post(Product.class, (AsyncConsumer<Product, String>) controller::create)
                             .doBind()
                         .bindTo("/products")
-                            .post(Product.class, controller::create)
+                            .post(Product.class, (AsyncConsumer<Product, String>) controller::create)
                             .doBind();
     }
 }

@@ -1,9 +1,7 @@
 package org.zalando.axiom.web.controller;
 
 
-import io.vertx.core.AsyncResultHandler;
-import io.vertx.core.Future;
-import io.vertx.core.Vertx;
+import io.vertx.core.*;
 import org.zalando.axiom.web.domain.Product;
 import org.zalando.axiom.web.domain.ProductParameter;
 import org.zalando.axiom.web.domain.ProductParameterNoDefaultCtx;
@@ -15,28 +13,33 @@ import java.util.UUID;
 
 public class ProductController {
 
+    private final Map<String, Product> products = new HashMap<>();
+
     private Vertx vertx;
 
     public ProductController(Vertx vertx) {
         this.vertx = vertx;
     }
 
-    private final Map<String, Product> products = new HashMap<>();
-
     public Product getById(String id) {
         return products.get(id);
     }
 
-    public Collection<Product> get(ProductParameter parameter) {
-        return products.values();
-    }
-
-    public Collection<Product> get(ProductParameterNoDefaultCtx parameter) {
-        return products.values();
-    }
-
     public String create(Product product) {
         return addProduct(product).getId();
+    }
+
+    public void create(Product product, AsyncResultHandler<String> handler) {
+        vertx.executeBlocking(event -> {
+                    event.complete(this.create(product));
+                },
+                event -> {
+                    if (event.succeeded()) {
+                        handler.handle(Future.succeededFuture((String) event.result()));
+                    } else {
+                        handler.handle(Future.failedFuture(event.cause().getMessage()));
+                    }
+                });
     }
 
     public Product addProduct(Product product) {
@@ -47,16 +50,51 @@ public class ProductController {
         return product;
     }
 
+    public void addProduct(Product product, AsyncResultHandler<Product> handler) {
+        vertx.executeBlocking(event -> {
+                    event.complete(this.addProduct(product));
+                },
+                event -> {
+                    if (event.succeeded()) {
+                        handler.handle(Future.succeededFuture((Product) event.result()));
+                    } else {
+                        handler.handle(Future.failedFuture(event.cause().getMessage()));
+                    }
+                });
+    }
+
+
     public void deleteProduct(String id) {
         products.remove(id);
     }
 
-    public void getAsync(String id, AsyncResultHandler<Product> handler) {
+    public void getAsync(ProductParameter parameter, AsyncResultHandler<Collection<Product>> handler) {
         vertx.executeBlocking(event -> {
-            Product product = getById(id);
-            handler.handle(Future.succeededFuture(product));
+            handler.handle(Future.succeededFuture(products.values()));
             event.complete();
-        }, event -> {
+        }, handleAsyncResult(handler));
+    }
+
+    private Handler<AsyncResult<Object>> handleAsyncResult(AsyncResultHandler<Collection<Product>> handler) {
+        return event -> {
+            if (event.failed()) {
+                handler.handle(Future.failedFuture(event.cause()));
+            }
+        };
+    }
+
+    public void getAsync(ProductParameterNoDefaultCtx parameter, AsyncResultHandler<Collection<Product>> handler) {
+        vertx.executeBlocking(event -> {
+            handler.handle(Future.succeededFuture(products.values()));
+            event.complete();
+        }, handleAsyncResult(handler));
+    }
+
+    public void getByIdAsync(String id, AsyncResultHandler<Product> handler) {
+        vertx.<Product>executeBlocking(event -> event.complete(getById(id)), event -> {
+            if (event.succeeded()) {
+                handler.handle(Future.succeededFuture(event.result()));
+            }
             if (event.failed()) {
                 handler.handle(Future.failedFuture(event.cause()));
             }

@@ -3,7 +3,6 @@ package org.zalando.axiom.web.handler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -14,6 +13,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.zalando.axiom.web.SwaggerRouter;
+import org.zalando.axiom.web.binding.functions.AsyncConsumer;
 import org.zalando.axiom.web.controller.ProductController;
 import org.zalando.axiom.web.domain.Product;
 import org.zalando.axiom.web.util.VertxUtils;
@@ -49,7 +49,7 @@ public class PostHandlerTest {
                 // @formatter:off
                 () -> SwaggerRouter.swaggerDefinition("/swagger-post.json")
                     .bindTo("/products")
-                        .post(Product.class, controller::create)
+                        .post(Product.class, (AsyncConsumer<Product, String>) controller::create)
                         .doBind()
                     .router(vertx));
                 // @formatter:on);
@@ -62,7 +62,7 @@ public class PostHandlerTest {
                 // @formatter:off
                 () -> SwaggerRouter.swaggerDefinition("/swagger-post.json")
                     .bindTo("/products")
-                        .post(Product.class, controller::create)
+                        .post(Product.class, (AsyncConsumer<Product, String>) controller::create)
                         .doBind()
                     .router(vertx));
                 // @formatter:on);
@@ -75,7 +75,7 @@ public class PostHandlerTest {
                 // @formatter:off
                 () -> SwaggerRouter.swaggerDefinition("/swagger-post-id-from-object.json")
                     .bindTo("/products")
-                        .post(Product.class, controller::addProduct)
+                        .post(Product.class, (AsyncConsumer<Product, Product>) controller::addProduct)
                         .doBind()
                     .router(vertx));
                 // @formatter:on);
@@ -101,15 +101,15 @@ public class PostHandlerTest {
     private void testPost(TestContext context, boolean withLocation, Supplier<Router> routerFactory) throws Exception {
         Product product = product(0);
         Async async = context.async();
-        HttpClientRequest request = getHttpClientRequest(context, async, product);
-        VertxUtils.startHttpServer(vertx, request, mapper.writeValueAsString(product), routerFactory);
+        TestCoordinator coordinator = getHttpClientRequest(context, async, product);
+        VertxUtils.startHttpServer(vertx, coordinator, mapper.writeValueAsString(product), routerFactory);
     }
 
-    private HttpClientRequest getHttpClientRequest(TestContext context, Async async, Product product) {
+    private TestCoordinator getHttpClientRequest(TestContext context, Async async, Product product) {
         return getHttpClientRequest(context, async, product, true);
     }
 
-    private HttpClientRequest getHttpClientRequest(TestContext context, Async async, Product product, boolean withLocation) {
+    private TestCoordinator getHttpClientRequest(TestContext context, Async async, Product product, boolean withLocation) {
         final String uri = "/v1/products";
         return VertxUtils.setUpPostRequest(vertx, context, async, uri, 201, response -> {
             String location = response.headers().get(HttpHeaders.LOCATION);

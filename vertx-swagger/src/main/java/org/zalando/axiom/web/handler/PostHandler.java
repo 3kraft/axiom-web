@@ -13,7 +13,6 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import static org.zalando.axiom.web.util.Preconditions.checkNotNull;
 
@@ -55,12 +54,7 @@ public class PostHandler<T> extends DefaultRouteHandler {
         try {
             if (function instanceof AsyncConsumer) {
                 ((AsyncConsumer) function).accept(mapper.readValue(bodyAsJson, paramType), defaultAsyncResultHandler(routingContext, callback));
-            }
-            else if (function instanceof Function) {
-                Object id = ((Function) function).apply(mapper.readValue(bodyAsJson, paramType));
-                callback.accept(id);
-            }
-            else {
+            } else {
                 throw new UnsupportedOperationException(String.format("Controller with this arity is not yet implemented: [%s]", function.getClass().getName()));
             }
         } catch (Exception e) {
@@ -89,7 +83,8 @@ public class PostHandler<T> extends DefaultRouteHandler {
     }
 
     private String getIdFromResult(Object result) {
-        String id;MethodHandles.Lookup lookup = MethodHandles.lookup();
+        String id;
+        MethodHandles.Lookup lookup = MethodHandles.lookup();
         Object idObject = null;
         try {
             MethodHandle getIdMethodHandle = lookup.findVirtual(result.getClass(), "getId", MethodType.methodType(String.class));

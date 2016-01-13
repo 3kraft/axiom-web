@@ -43,9 +43,9 @@ public class DeleteHandlerTest {
         Async async = context.async();
 
         ProductController controller = Data.productController(vertx, 5);
-        HttpClientRequest request = setUpDeleteRequest(vertx, context, async, "/v1/products/" + 3, 204);
+        TestCoordinator coordinator = setUpDeleteRequest(vertx, context, async, "/v1/products/" + 3, 204);
 
-        startHttpServer(vertx, request, () -> {
+        startHttpServer(vertx, coordinator, () -> {
                 // @formatter:off
                 return SwaggerRouter.swaggerDefinition("/swagger-get-by-id.json")
                             .bindTo("/products/:id")

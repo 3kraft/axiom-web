@@ -12,14 +12,11 @@ import org.zalando.axiom.web.SwaggerRouter;
 import org.zalando.axiom.web.binding.functions.AsyncIntFunction;
 import org.zalando.axiom.web.binding.functions.AsyncStringFunction;
 import org.zalando.axiom.web.binding.functions.AsyncSupplier;
-import org.zalando.axiom.web.binding.functions.StringFunction;
 import org.zalando.axiom.web.util.Strings;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 import static org.zalando.axiom.web.util.Preconditions.checkNotNull;
 
@@ -42,22 +39,7 @@ public class BindingBuilderFactory {
         return new DefaultBindingBuilder(this, swaggerRouter, path);
     }
 
-    public BindingBuilderFactory get(String path, Supplier<Object> supplier) {
-        getBindingBuilder(path).get(supplier).doBind();
-        return this;
-    }
-
     public <T> BindingBuilderFactory get(String path, AsyncSupplier<T> supplier) {
-        getBindingBuilder(path).get(supplier).doBind();
-        return this;
-    }
-
-    public <T, R> BindingBuilderFactory get(String path, Class<T> paramType, Function<T, R> function) {
-        getBindingBuilder(path).get(paramType, function).doBind();
-        return this;
-    }
-
-    public BindingBuilderFactory get(String path, StringFunction<Object> supplier) {
         getBindingBuilder(path).get(supplier).doBind();
         return this;
     }
@@ -68,11 +50,6 @@ public class BindingBuilderFactory {
     }
 
     public BindingBuilderFactory get(String path, AsyncIntFunction<Object> supplier) {
-        getBindingBuilder(path).get(supplier).doBind();
-        return this;
-    }
-
-    public <T> BindingBuilderFactory getById(String path, StringFunction<T> supplier) {
         getBindingBuilder(path).get(supplier).doBind();
         return this;
     }

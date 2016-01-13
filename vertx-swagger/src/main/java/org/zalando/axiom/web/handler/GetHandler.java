@@ -22,7 +22,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -52,6 +51,7 @@ public class GetHandler<T> extends DefaultRouteHandler {
         this.path = path;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void handle(RoutingContext routingContext) {
         MultiMap params = routingContext.request().params();
@@ -62,30 +62,20 @@ public class GetHandler<T> extends DefaultRouteHandler {
             } else {
                 parameter = fillParameterWithNonDefaultConstructor(paramType, params);
             }
-            executeFunction(parameter, routingContext, result -> {
-                try {
-                    if (result == null) {
-                        routingContext.response().setStatusCode(404).end();
-                    } else {
-                        routingContext.response().setStatusCode(200).end(mapper.writeValueAsString(result));
+            ((AsyncFunction) function).apply(parameter, defaultAsyncResultHandler(routingContext, result -> {
+                        try {
+                            if (result == null) {
+                                routingContext.response().setStatusCode(404).end();
+                            } else {
+                                routingContext.response().setStatusCode(200).end(mapper.writeValueAsString(result));
+                            }
+                        } catch (JsonProcessingException e) {
+                            handleError(String.format("Could not serialize result [%s]!", result.getClass().getName()), e, routingContext);
+                        }
                     }
-                } catch (JsonProcessingException e) {
-                    handleError(String.format("Could not serialize result [%s]!", result.getClass().getName()), e, routingContext);
-                }
-            });
+            ));
         } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
             handleControllerError(routingContext, e);
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private void executeFunction(Object parameter, RoutingContext routingContext, Consumer<Object> callback) {
-        if (function instanceof AsyncFunction) {
-            ((AsyncFunction) function).apply(parameter, defaultAsyncResultHandler(routingContext, callback));
-        }
-        else if (function instanceof Function) {
-            Object result = ((Function) function).apply(parameter);
-            callback.accept(result);
         }
     }
 
