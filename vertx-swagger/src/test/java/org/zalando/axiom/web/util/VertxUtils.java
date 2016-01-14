@@ -24,9 +24,9 @@ public class VertxUtils {
 
         request.handler(response -> {
             checkStatusCode(context, async, expectedStatusCode, response);
-            async.complete();
+            coordinator.stopServer();
         });
-        failHandler(context, async, request);
+        failHandler(context, coordinator, request);
         return coordinator;
     }
 
@@ -40,7 +40,7 @@ public class VertxUtils {
             tester.accept(response);
             coordinator.stopServer();
         });
-        failHandler(context, async, request);
+        failHandler(context, coordinator, request);
         return coordinator;
     }
 
@@ -55,31 +55,40 @@ public class VertxUtils {
                     coordinator.stopServer();
                 }
         );
-        failHandler(context, async, request);
+        failHandler(context, coordinator, request);
         return coordinator;
     }
 
     public static void startHttpServer(Vertx vertx, TestCoordinator coordinator, Supplier<Router> routerFactory) {
-        startHttpServer(vertx, coordinator, null, routerFactory);
+        startHttpServer(vertx, coordinator, null, null, routerFactory);
     }
 
-    public static void startHttpServer(Vertx vertx, TestCoordinator coordinator, String requestBody, Supplier<Router> routerFactory) {
+    public static void startHttpServer(Vertx vertx, TestCoordinator coordinator, String requestBody, Class<? extends Exception> expectedException, Supplier<Router> routerFactory) {
         vertx.deployVerticle(new AbstractVerticle() {
             @Override
             public void start(Future<Void> startFuture) throws Exception {
                 HttpServer server = vertx.createHttpServer();
-                server.requestHandler(routerFactory.get()::accept).listen(8080, handler -> {
-                    if (handler.succeeded()) {
-                        if (requestBody == null) {
-                            coordinator.startRequest(server);
+                try {
+                    Router router = routerFactory.get();
+                    server.requestHandler(router::accept).listen(8080, handler -> {
+                        if (handler.succeeded()) {
+                            if (requestBody == null) {
+                                coordinator.startRequest(server);
+                            } else {
+                                coordinator.startRequest(server, requestBody);
+                            }
+                            startFuture.complete();
                         } else {
-                            coordinator.startRequest(server, requestBody);
+                            throw new IllegalStateException("Server did not start!", handler.cause());
                         }
-                        startFuture.complete();
-                    } else {
-                        throw new IllegalStateException("Server did not start!", handler.cause());
+                    });
+                } catch (Exception e) {
+                    coordinator.getAsync().complete();
+                    if (expectedException != null && !e.getClass().equals(expectedException)) {
+                        throw e;
                     }
-                });
+                }
+
             }
         });
     }
@@ -91,10 +100,10 @@ public class VertxUtils {
         }
     }
 
-    private static void failHandler(TestContext context, Async async, HttpClientRequest request) {
+    private static void failHandler(TestContext context, TestCoordinator coordinator, HttpClientRequest request) {
         request.exceptionHandler(exception -> {
             context.fail(exception.getLocalizedMessage());
-            async.complete();
+            coordinator.stopServer();
         });
     }
 }

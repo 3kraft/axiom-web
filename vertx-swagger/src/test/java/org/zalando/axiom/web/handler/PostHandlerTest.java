@@ -103,7 +103,7 @@ public class PostHandlerTest {
         Product product = product(0);
         Async async = context.async();
         TestCoordinator coordinator = getHttpClientRequest(context, async, product);
-        VertxUtils.startHttpServer(vertx, coordinator, mapper.writeValueAsString(product), routerFactory);
+        VertxUtils.startHttpServer(vertx, coordinator, mapper.writeValueAsString(product), null, routerFactory);
     }
 
     private TestCoordinator getHttpClientRequest(TestContext context, Async async, Product product) {

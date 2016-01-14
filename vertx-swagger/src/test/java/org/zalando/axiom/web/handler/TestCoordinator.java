@@ -33,4 +33,8 @@ public class TestCoordinator {
         }
         server.close(event -> async.complete());
     }
+
+    public Async getAsync() {
+        return async;
+    }
 }

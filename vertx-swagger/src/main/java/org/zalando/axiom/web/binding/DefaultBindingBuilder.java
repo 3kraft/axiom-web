@@ -15,7 +15,6 @@ import org.zalando.axiom.web.handler.*;
 import org.zalando.axiom.web.util.Preconditions;
 
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class DefaultBindingBuilder implements BindingBuilder {
@@ -83,13 +82,13 @@ public class DefaultBindingBuilder implements BindingBuilder {
     }
 
     public <T, R> DefaultBindingBuilder post(Class<T> paramType, AsyncFunction<T, R> function) {
-        Operation postOperation = swaggerRouter.getSwagger().getPath(routeConfiguration.getSwaggerPath()).getPost();
+        Operation postOperation = getPostOperation();
         routeConfiguration.addHandler(HttpMethod.POST, toMetricsHandler(new PostHandler<>(postOperation, swaggerRouter.getMapper(), function, paramType)));
         return this;
     }
 
     public DefaultBindingBuilder delete(AsyncStringConsumer function) {
-        routeConfiguration.addHandler(HttpMethod.DELETE, toMetricsHandler(new DeleteHandler(function)));
+        routeConfiguration.addHandler(HttpMethod.DELETE, toMetricsHandler(new DeleteHandler(getDeleteOperation(), function)));
         return this;
     }
 
@@ -99,11 +98,23 @@ public class DefaultBindingBuilder implements BindingBuilder {
         return bindingBuilderFactory;
     } // TODO validation
 
-    private <T, R> Handler<RoutingContext> toMetricsHandler(Handler<RoutingContext> handler) {
+    private Handler<RoutingContext> toMetricsHandler(Handler<RoutingContext> handler) {
         if (swaggerRouter.isMetricsEnabled()) {
             return new MetricsHandler(swaggerRouter.getMetricsRegistry(), handler, routeConfiguration.getVertxPath());
         } else {
             return handler;
         }
+    }
+
+    private Operation getGetOperation() {
+        return swaggerRouter.getSwagger().getPath(routeConfiguration.getSwaggerPath()).getGet();
+    }
+
+    private Operation getPostOperation() {
+        return swaggerRouter.getSwagger().getPath(routeConfiguration.getSwaggerPath()).getPost();
+    }
+
+    private Operation getDeleteOperation() {
+        return swaggerRouter.getSwagger().getPath(routeConfiguration.getSwaggerPath()).getDelete();
     }
 }

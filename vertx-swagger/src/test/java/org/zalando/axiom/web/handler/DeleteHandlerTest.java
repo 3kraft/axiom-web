@@ -3,7 +3,6 @@ package org.zalando.axiom.web.handler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpClientRequest;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -46,13 +45,31 @@ public class DeleteHandlerTest {
         TestCoordinator coordinator = setUpDeleteRequest(vertx, context, async, "/v1/products/" + 3, 204);
 
         startHttpServer(vertx, coordinator, () -> {
-                // @formatter:off
+            // @formatter:off
                 return SwaggerRouter.swaggerDefinition("/swagger-get-by-id.json")
                             .bindTo("/products/:id")
                                 .delete(controller::deleteProductAsync)
                             .doBind()
                             .router(vertx);
                 // @formatter:on
+        });
+    }
+
+    @Test
+    public void testDeleteCheckStatusCodesMissing(TestContext context) throws Exception {
+        Async async = context.async();
+
+        ProductController controller = Data.productController(vertx, 5);
+        TestCoordinator coordinator = setUpDeleteRequest(vertx, context, async, "/v1/products/" + 3, 204);
+
+        startHttpServer(vertx, coordinator, null, IllegalStateException.class, () -> {
+            // @formatter:off
+            return SwaggerRouter.swaggerDefinition("/swagger-delete-response-status-code-missing.json")
+                        .bindTo("/products/:id")
+                            .delete(controller::deleteProductAsync)
+                        .doBind()
+                        .router(vertx);
+            // @formatter:on
         });
     }
 }

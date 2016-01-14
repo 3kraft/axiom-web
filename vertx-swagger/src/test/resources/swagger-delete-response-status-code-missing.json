@@ -15,28 +15,6 @@
     ],
     "paths": {
         "/products/{id}": {
-            "get": {
-                "summary": "Product Types",
-                "description": "The Products endpoint returns information about the *Uber* products\noffered at a given location. The response includes the display name\nand other details about each product, and lists the products in the\nproper display order.\n",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "type": "string"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "A product",
-                        "schema": {
-                            "items": {
-                                "$ref": "#/definitions/Product"
-                            }
-                        }
-                    }
-                }
-            },
             "delete": {
                 "summary": "Product Types",
                 "description": "Deletes one product",
@@ -50,8 +28,6 @@
                 ],
                 "responses": {
                     "204": {
-                    },
-                    "500": {
                     }
                 }
             }
