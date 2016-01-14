@@ -68,6 +68,18 @@ public class ProductController {
         products.remove(id);
     }
 
+    public void deleteProductAsync(String id, AsyncResultHandler<Void> handler) {
+        vertx.executeBlocking(event -> {
+                    handler.handle(Future.succeededFuture());
+                    event.complete();
+                }, event -> {
+                    if (event.failed()) {
+                        handler.handle(Future.failedFuture(event.cause()));
+                    }
+                }
+        );
+    }
+
     public void getAsync(ProductParameter parameter, AsyncResultHandler<Collection<Product>> handler) {
         vertx.executeBlocking(event -> {
             handler.handle(Future.succeededFuture(products.values()));

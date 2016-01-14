@@ -2,16 +2,15 @@ package org.zalando.axiom.web.handler;
 
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
-
-import java.util.function.Consumer;
+import org.zalando.axiom.web.binding.functions.AsyncStringConsumer;
 
 import static org.zalando.axiom.web.util.HandlerUtils.getOnlyValue;
 
 public class DeleteHandler implements Handler<RoutingContext> {
 
-    private final Consumer<String> function;
+    private final AsyncStringConsumer function;
 
-    public DeleteHandler(Consumer<String> function) {
+    public DeleteHandler(AsyncStringConsumer function) {
         this.function = function;
     }
 
@@ -19,8 +18,13 @@ public class DeleteHandler implements Handler<RoutingContext> {
     public void handle(RoutingContext routingContext) {
         String id = getOnlyValue(routingContext);
         try {
-            function.accept(id);
-            routingContext.response().setStatusCode(204).end();
+            function.accept(id, asyncResult -> {
+                if (asyncResult.succeeded()) {
+                    routingContext.response().setStatusCode(204).end();
+                } else {
+                    routingContext.fail(500);
+                }
+            });
         } catch (Exception e) {
             routingContext.fail(500);
         }

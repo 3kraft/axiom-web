@@ -49,7 +49,7 @@ public class DeleteHandlerTest {
                 // @formatter:off
                 return SwaggerRouter.swaggerDefinition("/swagger-get-by-id.json")
                             .bindTo("/products/:id")
-                                .delete(controller::deleteProduct)
+                                .delete(controller::deleteProductAsync)
                             .doBind()
                             .router(vertx);
                 // @formatter:on

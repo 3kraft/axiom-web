@@ -14,6 +14,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.zalando.axiom.web.SwaggerRouter;
 import org.zalando.axiom.web.binding.functions.AsyncConsumer;
+import org.zalando.axiom.web.binding.functions.AsyncFunction;
 import org.zalando.axiom.web.controller.ProductController;
 import org.zalando.axiom.web.domain.Product;
 import org.zalando.axiom.web.util.VertxUtils;
@@ -49,7 +50,7 @@ public class PostHandlerTest {
                 // @formatter:off
                 () -> SwaggerRouter.swaggerDefinition("/swagger-post.json")
                     .bindTo("/products")
-                        .post(Product.class, (AsyncConsumer<Product, String>) controller::create)
+                        .post(Product.class, (AsyncFunction<Product, String>) controller::create)
                         .doBind()
                     .router(vertx));
                 // @formatter:on);
@@ -62,7 +63,7 @@ public class PostHandlerTest {
                 // @formatter:off
                 () -> SwaggerRouter.swaggerDefinition("/swagger-post.json")
                     .bindTo("/products")
-                        .post(Product.class, (AsyncConsumer<Product, String>) controller::create)
+                        .post(Product.class, (AsyncFunction<Product, String>) controller::create)
                         .doBind()
                     .router(vertx));
                 // @formatter:on);
@@ -75,7 +76,7 @@ public class PostHandlerTest {
                 // @formatter:off
                 () -> SwaggerRouter.swaggerDefinition("/swagger-post-id-from-object.json")
                     .bindTo("/products")
-                        .post(Product.class, (AsyncConsumer<Product, Product>) controller::addProduct)
+                        .post(Product.class, (AsyncFunction<Product, Product>) controller::addProduct)
                         .doBind()
                     .router(vertx));
                 // @formatter:on);

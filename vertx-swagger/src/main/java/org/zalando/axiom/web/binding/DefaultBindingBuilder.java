@@ -39,6 +39,10 @@ public class DefaultBindingBuilder implements BindingBuilder {
         this.operationMap = swaggerPath.getOperationMap();
     }
 
+    public <T> DefaultBindingBuilder get(AsyncFunctionWithResponse<T> function) {
+        throw new UnsupportedOperationException();
+    }
+
     public <T> DefaultBindingBuilder get(AsyncStringFunction<T> function) {
         get((Async) function);
         return this;
@@ -78,14 +82,13 @@ public class DefaultBindingBuilder implements BindingBuilder {
         return this;
     }
 
-    public <T, R> DefaultBindingBuilder post(Class<T> paramType, AsyncConsumer<T, R> function) {
+    public <T, R> DefaultBindingBuilder post(Class<T> paramType, AsyncFunction<T, R> function) {
         Operation postOperation = swaggerRouter.getSwagger().getPath(routeConfiguration.getSwaggerPath()).getPost();
         routeConfiguration.addHandler(HttpMethod.POST, toMetricsHandler(new PostHandler<>(postOperation, swaggerRouter.getMapper(), function, paramType)));
         return this;
     }
 
-    // FIXME implement async delete
-    public DefaultBindingBuilder delete(Consumer<String> function) {
+    public DefaultBindingBuilder delete(AsyncStringConsumer function) {
         routeConfiguration.addHandler(HttpMethod.DELETE, toMetricsHandler(new DeleteHandler(function)));
         return this;
     }

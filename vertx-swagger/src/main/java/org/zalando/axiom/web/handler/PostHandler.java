@@ -8,6 +8,7 @@ import io.vertx.ext.web.RoutingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zalando.axiom.web.binding.functions.AsyncConsumer;
+import org.zalando.axiom.web.binding.functions.AsyncFunction;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -52,8 +53,8 @@ public class PostHandler<T> extends DefaultRouteHandler {
     @SuppressWarnings("unchecked") // async functions with generic consumers cause not nice warnings
     private void executeFunction(RoutingContext routingContext, String bodyAsJson, Consumer<Object> callback) {
         try {
-            if (function instanceof AsyncConsumer) {
-                ((AsyncConsumer) function).accept(mapper.readValue(bodyAsJson, paramType), defaultAsyncResultHandler(routingContext, callback));
+            if (function instanceof AsyncFunction) {
+                ((AsyncFunction) function).apply(mapper.readValue(bodyAsJson, paramType), defaultAsyncResultHandler(routingContext, callback));
             } else {
                 throw new UnsupportedOperationException(String.format("Controller with this arity is not yet implemented: [%s]", function.getClass().getName()));
             }
