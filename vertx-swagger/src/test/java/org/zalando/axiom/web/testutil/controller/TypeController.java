@@ -1,4 +1,4 @@
-package org.zalando.axiom.web.controller;
+package org.zalando.axiom.web.testutil.controller;
 
 
 import java.util.Arrays;

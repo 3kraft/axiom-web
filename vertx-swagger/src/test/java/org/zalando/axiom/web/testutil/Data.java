@@ -1,8 +1,8 @@
-package org.zalando.axiom.web.util;
+package org.zalando.axiom.web.testutil;
 
 import io.vertx.core.Vertx;
-import org.zalando.axiom.web.controller.ProductController;
-import org.zalando.axiom.web.domain.Product;
+import org.zalando.axiom.web.testutil.controller.ProductController;
+import org.zalando.axiom.web.testutil.domain.Product;
 
 public final class Data {
 

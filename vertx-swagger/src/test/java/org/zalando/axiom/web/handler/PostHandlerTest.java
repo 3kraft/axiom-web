@@ -13,15 +13,15 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.zalando.axiom.web.SwaggerRouter;
-import org.zalando.axiom.web.binding.functions.AsyncConsumer;
 import org.zalando.axiom.web.binding.functions.AsyncFunction;
-import org.zalando.axiom.web.controller.ProductController;
-import org.zalando.axiom.web.domain.Product;
+import org.zalando.axiom.web.testutil.controller.ProductController;
+import org.zalando.axiom.web.testutil.domain.Product;
+import org.zalando.axiom.web.testutil.TestCoordinator;
 import org.zalando.axiom.web.util.VertxUtils;
 
 import java.util.function.Supplier;
 
-import static org.zalando.axiom.web.util.Data.product;
+import static org.zalando.axiom.web.testutil.Data.product;
 
 @RunWith(VertxUnitRunner.class)
 public class PostHandlerTest {

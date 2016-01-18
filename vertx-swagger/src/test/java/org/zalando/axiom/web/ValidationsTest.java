@@ -4,8 +4,8 @@ import io.vertx.core.Vertx;
 import org.junit.Before;
 import org.junit.Test;
 import org.zalando.axiom.web.binding.functions.AsyncFunction;
-import org.zalando.axiom.web.controller.ProductController;
-import org.zalando.axiom.web.domain.Product;
+import org.zalando.axiom.web.testutil.controller.ProductController;
+import org.zalando.axiom.web.testutil.domain.Product;
 
 public class ValidationsTest {
 

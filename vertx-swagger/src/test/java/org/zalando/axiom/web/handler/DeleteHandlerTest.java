@@ -11,8 +11,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.zalando.axiom.web.SwaggerRouter;
-import org.zalando.axiom.web.controller.ProductController;
-import org.zalando.axiom.web.util.Data;
+import org.zalando.axiom.web.testutil.controller.ProductController;
+import org.zalando.axiom.web.testutil.Data;
+import org.zalando.axiom.web.testutil.TestCoordinator;
 
 import static org.zalando.axiom.web.util.VertxUtils.setUpDeleteRequest;
 import static org.zalando.axiom.web.util.VertxUtils.startHttpServer;

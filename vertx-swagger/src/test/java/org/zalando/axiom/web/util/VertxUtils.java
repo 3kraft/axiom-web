@@ -10,7 +10,7 @@ import io.vertx.core.http.HttpServer;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.web.Router;
-import org.zalando.axiom.web.handler.TestCoordinator;
+import org.zalando.axiom.web.testutil.TestCoordinator;
 
 import java.util.function.Consumer;
 import java.util.function.Supplier;

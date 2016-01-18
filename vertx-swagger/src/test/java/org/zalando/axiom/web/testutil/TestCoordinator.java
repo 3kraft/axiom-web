@@ -1,4 +1,4 @@
-package org.zalando.axiom.web.handler;
+package org.zalando.axiom.web.testutil;
 
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpServer;

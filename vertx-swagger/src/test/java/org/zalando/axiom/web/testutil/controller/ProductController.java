@@ -1,15 +1,13 @@
-package org.zalando.axiom.web.controller;
+package org.zalando.axiom.web.testutil.controller;
 
 
 import io.vertx.core.*;
-import org.zalando.axiom.web.domain.Product;
-import org.zalando.axiom.web.domain.ProductParameter;
-import org.zalando.axiom.web.domain.ProductParameterNoDefaultCtx;
+import org.zalando.axiom.web.testutil.domain.Product;
+import org.zalando.axiom.web.testutil.domain.ProductParameter;
+import org.zalando.axiom.web.testutil.domain.ProductParameterNoDefaultCtx;
+import org.zalando.axiom.web.util.Preconditions;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public class ProductController {
 
@@ -21,6 +19,9 @@ public class ProductController {
         this.vertx = vertx;
     }
 
+    public List<Product> get() {
+        return new ArrayList<>(products.values());
+    }
     public Product getById(String id) {
         return products.get(id);
     }

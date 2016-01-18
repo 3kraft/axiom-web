@@ -1,4 +1,4 @@
-package org.zalando.axiom.web.domain;
+package org.zalando.axiom.web.testutil.domain;
 
 public class Product {
 
