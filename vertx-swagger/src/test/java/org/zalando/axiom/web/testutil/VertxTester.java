@@ -133,6 +133,7 @@ public class VertxTester {
                 try {
                     if (routerFactory == null) {
                         testContext.fail("A router factory must be specified!");
+                        return; // to make FindBugs happy
                     }
                     Router router = routerFactory.get();
                     server.requestHandler(router::accept).listen(8080, handler -> {
