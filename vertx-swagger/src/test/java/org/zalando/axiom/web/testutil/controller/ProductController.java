@@ -71,6 +71,7 @@ public class ProductController {
 
     public void deleteProductAsync(String id, AsyncResultHandler<Void> handler) {
         vertx.executeBlocking(event -> {
+                    this.deleteProduct(id);
                     handler.handle(Future.succeededFuture());
                     event.complete();
                 }, event -> {

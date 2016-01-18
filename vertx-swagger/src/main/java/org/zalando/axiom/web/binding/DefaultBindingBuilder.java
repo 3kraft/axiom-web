@@ -38,10 +38,6 @@ public class DefaultBindingBuilder implements BindingBuilder {
         this.operationMap = swaggerPath.getOperationMap();
     }
 
-    public <T> DefaultBindingBuilder get(AsyncFunctionWithResponse<T> function) {
-        throw new UnsupportedOperationException();
-    }
-
     public <T> DefaultBindingBuilder get(AsyncStringFunction<T> function) {
         get((Async) function);
         return this;

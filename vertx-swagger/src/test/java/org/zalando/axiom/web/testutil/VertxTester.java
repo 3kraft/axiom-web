@@ -3,9 +3,7 @@ package org.zalando.axiom.web.testutil;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpClientRequest;
-import io.vertx.core.http.HttpClientResponse;
-import io.vertx.core.http.HttpServer;
+import io.vertx.core.http.*;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.web.Router;
@@ -30,7 +28,11 @@ public class VertxTester {
 
     private ResponseConsumer responseAssertion;
 
-    private String getRequestUri;
+    private HttpMethod requestMethod;
+
+    private String requestUri;
+
+    private Class<? extends Exception> expectedExceptionInRouterBinding;
 
     VertxTester(TestContext testContext) {
         this.testContext = testContext;
@@ -46,13 +48,19 @@ public class VertxTester {
         return this;
     }
 
+    VertxTester expectedExceptionInRouterBinding(Class<? extends Exception> expectedException) {
+        this.expectedExceptionInRouterBinding = expectedException;
+        return this;
+    }
+
     VertxTester responseAssertion(ResponseConsumer responseAssertion) {
         this.responseAssertion = responseAssertion;
         return this;
     }
 
-    VertxTester getRequest(String uri) {
-        this.getRequestUri = uri;
+    VertxTester request(HttpMethod method, String requestUri) {
+        this.requestMethod = method;
+        this.requestUri = requestUri;
         return this;
     }
 
@@ -71,19 +79,38 @@ public class VertxTester {
     }
 
     void stopServer() {
-        if (!requestStarted) {
+        stopServer(null);
+    }
+
+    void stopServer(Throwable cause) {
+        server.close(event -> async.complete());
+
+        if (cause != null && expectedExceptionInRouterBinding == null) {
+            testContext.fail(cause);
+        }
+        if (expectedExceptionInRouterBinding == null && !requestStarted) {
             testContext.fail("Request was not fired, and server stopped!");
         }
         if (server == null) {
             testContext.fail("Could not stop server as instance is null!");
         }
-        server.close(event -> async.complete());
     }
 
     void start(Vertx vertx, String requestBody) {
         this.async = testContext.async();
 
-        this.request = vertx.createHttpClient().get(8080, "127.0.0.1", getRequestUri);
+        HttpClient client = vertx.createHttpClient();
+
+        switch (requestMethod) {
+            case GET:
+                this.request = client.get(8080, "127.0.0.1", requestUri);
+                break;
+            case DELETE:
+                this.request = client.delete(8080, "127.0.0.1", requestUri);
+                break;
+            default:
+                throw new UnsupportedOperationException("Request http method not covered!");
+        }
 
         request.handler(response -> {
             checkStatusCode(response);
@@ -122,11 +149,12 @@ public class VertxTester {
                         }
                     });
                 } catch (Exception e) {
-                    testContext.fail(e);
-                    stopServer();
-//                    if (expectedException != null && !e.getClass().equals(expectedException)) {
-//                        throw e;
-//                    }
+                    stopServer(e);
+                    if (expectedExceptionInRouterBinding != null && !e.getClass().equals(expectedExceptionInRouterBinding)) {
+                        testContext.fail(e);
+                    } else if (expectedExceptionInRouterBinding == null) {
+                        testContext.fail(e);
+                    }
                 }
             }
         });

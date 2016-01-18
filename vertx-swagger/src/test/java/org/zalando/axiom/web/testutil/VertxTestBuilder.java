@@ -2,6 +2,7 @@ package org.zalando.axiom.web.testutil;
 
 
 import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.web.Router;
 
@@ -15,7 +16,11 @@ public final class VertxTestBuilder {
 
     private ResponseConsumer responseAssertion;
 
-    private String getRequestUri;
+    private HttpMethod requestMethod;
+
+    private String requestUri;
+
+    private Class<? extends Exception> expectedExceptionInRouterBinding;
 
     public VertxTestBuilder routerFactory(Supplier<Router> routerFactory) {
         this.routerFactory = routerFactory;
@@ -33,7 +38,19 @@ public final class VertxTestBuilder {
     }
 
     public VertxTestBuilder getRequest(String uri) {
-        this.getRequestUri = uri;
+        this.requestMethod = HttpMethod.GET;
+        this.requestUri = uri;
+        return this;
+    }
+
+    public VertxTestBuilder deleteRequest(String uri) {
+        this.requestMethod = HttpMethod.DELETE;
+        this.requestUri = uri;
+        return this;
+    }
+
+    public VertxTestBuilder expectedExceptionInRouterBinding(Class<? extends Exception> expectedException) {
+        this.expectedExceptionInRouterBinding = expectedException;
         return this;
     }
 
@@ -44,7 +61,8 @@ public final class VertxTestBuilder {
     public void start(TestContext testContext, Vertx vertx, String requestBody) {
         new VertxTester(testContext)
                 .expectedStatusCode(expectedStatusCode)
-                .getRequest(getRequestUri)
+                .expectedExceptionInRouterBinding(expectedExceptionInRouterBinding)
+                .request(requestMethod, requestUri)
                 .routerFactory(routerFactory)
                 .responseAssertion(responseAssertion)
                 .start(vertx, requestBody);
@@ -53,4 +71,5 @@ public final class VertxTestBuilder {
     public static VertxTestBuilder tester() {
         return new VertxTestBuilder();
     }
+
 }

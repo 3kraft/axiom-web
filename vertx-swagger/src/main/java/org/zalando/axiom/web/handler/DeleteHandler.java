@@ -15,8 +15,6 @@ import static org.zalando.axiom.web.util.HandlerUtils.getOnlyValue;
 
 public class DeleteHandler implements Handler<RoutingContext> {
 
-    private final Operation operation;
-
     private final AsyncStringConsumer function;
 
     private final static HashSet<String> ACCEPTED_RESPONSE_CODES = new HashSet<>();
@@ -27,7 +25,6 @@ public class DeleteHandler implements Handler<RoutingContext> {
     }
 
     public DeleteHandler(Operation operation, AsyncStringConsumer function) {
-        this.operation = operation;
         this.function = function;
         checkResponses(operation.getResponses());
     }
