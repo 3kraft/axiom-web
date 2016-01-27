@@ -1,9 +1,15 @@
 package org.zalando.axiom.web.krueger
 
+import io.vertx.core.AsyncResultHandler
+import io.vertx.core.Vertx
 import org.zalando.axiom.web.krueger.metrics.AppMetricsSupplier
 
-class AppMetricsService(val metricsSuppliers: List<AppMetricsSupplier>) {
+class AppMetricsService(val vertx: Vertx, val metricsSuppliers: List<AppMetricsSupplier>) {
 
-    fun getMetrics(): Map<String, Number> = metricsSuppliers.map { metricsSupplier -> metricsSupplier.supply() }.flatten().toSortedMap()
+    fun getMetrics(handler: AsyncResultHandler<Map<String, Number>>) {
+        vertx.executeBlocking(handler, {
+            metricsSuppliers.map { metricsSupplier -> metricsSupplier.supply() }.flatten().toSortedMap()
+        })
+    }
 
 }

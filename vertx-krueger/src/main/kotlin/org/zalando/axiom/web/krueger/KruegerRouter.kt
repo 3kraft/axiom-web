@@ -2,8 +2,11 @@ package org.zalando.axiom.web.krueger
 
 
 import com.codahale.metrics.MetricRegistry
+import io.vertx.core.AsyncResultHandler
+import io.vertx.core.Future
 import io.vertx.core.Vertx
 import io.vertx.core.json.Json
+import io.vertx.core.json.JsonObject
 import io.vertx.ext.web.Router
 import org.apache.logging.log4j.LogManager
 import org.zalando.axiom.web.SwaggerRouter
@@ -11,6 +14,7 @@ import org.zalando.axiom.web.krueger.metrics.AppMetricsSupplier
 import org.zalando.axiom.web.krueger.metrics.GarbageCollectorMetricsSupplier
 import org.zalando.axiom.web.krueger.metrics.JvmMetricsSupplier
 import org.zalando.axiom.web.krueger.metrics.ZmonMetricsSupplier
+import java.util.*
 
 object KruegerRouter {
 
@@ -25,30 +29,30 @@ object KruegerRouter {
                 .mapper(Json.mapper)
                 .swaggerDefinition("/$swaggerJson")
 
-        val appMetricsService = AppMetricsService(metricsSuppliers)
+        val appMetricsService = AppMetricsService(vertx, metricsSuppliers)
         val vertxMetricsService = VertxMetricsService(vertx, metricsRegistry)
 
         val router =
                 factory.bindTo("/metrics")
-                        .get { -> appMetricsService.getMetrics() }
+                        .get {  handler: AsyncResultHandler<Map<String, Number>> -> appMetricsService.getMetrics(handler) }
                         .doBind()
                         .bindTo("/metrics/statusCodes")
-                        .get { -> vertxMetricsService.getStatusCodesMetrics() }
+                        .get { handler: AsyncResultHandler<Map<String, Long>> -> vertxMetricsService.getStatusCodesMetrics(handler) }
                         .doBind()
                         .bindTo("/metrics/vertx")
-                        .get { -> vertxMetricsService.getVertxMetrics() }
+                        .get { handler: AsyncResultHandler<List<JsonObject>> -> vertxMetricsService.getVertxMetrics(handler) }
                         .doBind()
                         .bindTo("/metrics/eventBus")
-                        .get { -> vertxMetricsService.getEventBusMetrics() }
+                        .get { handler: AsyncResultHandler<Map<String, Number>> -> vertxMetricsService.getEventBusMetrics(handler) }
                         .doBind()
                         .bindTo("/env")
-                        .get { -> System.getenv() }
+                        .get { handler: AsyncResultHandler<Map<String, String>> -> handler.handle(Future.succeededFuture(System.getenv())) }
                         .doBind()
                         .bindTo("/properties")
-                        .get { -> System.getProperties() }
+                        .get { handler: AsyncResultHandler<Properties> -> handler.handle(Future.succeededFuture(System.getProperties())) }
                         .doBind()
                         .bindTo("/health")
-                        .get { -> "ok" }
+                        .get { handler: AsyncResultHandler<String> -> handler.handle(Future.succeededFuture("ok")) }
                         .doBind()
                         .router(vertx)
 
@@ -62,4 +66,3 @@ object KruegerRouter {
     }
 
 }
-
