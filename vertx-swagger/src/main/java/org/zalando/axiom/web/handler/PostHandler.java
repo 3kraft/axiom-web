@@ -2,17 +2,18 @@ package org.zalando.axiom.web.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.models.Operation;
+import io.swagger.models.properties.Property;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.zalando.axiom.web.binding.functions.AsyncConsumer;
 import org.zalando.axiom.web.binding.functions.AsyncFunction;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.util.Map;
 import java.util.function.Consumer;
 
 import static org.zalando.axiom.web.util.Preconditions.checkNotNull;
@@ -101,6 +102,7 @@ public class PostHandler<T> extends DefaultRouteHandler {
     }
 
     private boolean doSetLocation() {
-        return operation.getResponses().get("201").getHeaders().containsKey("Location");
+        Map<String, Property> headers = operation.getResponses().get("201").getHeaders();
+        return headers != null && headers.containsKey("Location");
     }
 }
