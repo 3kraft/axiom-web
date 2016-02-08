@@ -26,7 +26,7 @@ Gradle expects to have couple of build properties:
 
     org.gradle.daemon=true
     signing.keyId=
-    # signing.password=
+    signing.password=
     signing.secretKeyRingFile=/home/USER/.gnupg/secring.gpg
 
     sonatypeUsername=
