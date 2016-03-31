@@ -1,6 +1,7 @@
 # Vertx swagger
 
-This library creates vertx web bindings using the API description in the swagger.json (spec v2) file.
+This library validates user-defined vertx web bindings, against the API description in the swagger.json (spec v2) file.
+
 
 ## Usage
 

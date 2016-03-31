@@ -8,7 +8,7 @@ buildscript {
 def projectName = 'Axiom Web Vertx Swagger'
 
 group = 'org.zalando'
-version = '0.3.0-SNAPSHOT'
+version = '0.3.1-SNAPSHOT'
 description = 'The vertx swagger integration library creates vertx-web bindings using a swagger definition file.'
 
 apply plugin: 'java'
@@ -111,36 +111,36 @@ uploadArchives {
             beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
             repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
-              authentication(userName: sonatypeUsername, password: sonatypePassword)
+                authentication(userName: sonatypeUsername, password: sonatypePassword)
             }
 
             pom.project {
-               name projectName
-               packaging 'jar'
-               description project.description
-               url 'https://github.com/zalando/axiom-web'
+                name projectName
+                packaging 'jar'
+                description project.description
+                url 'https://github.com/zalando/axiom-web'
 
-               scm {
-                   url 'scm:git@git@github.com:zalando/axiom-web.git'
-                   connection 'scm:git@git@github.com:zalando/axiom-web.git'
-                   developerConnection 'scm:git@git@github.com:zalando/axiom-web.git'
-               }
+                scm {
+                    url 'scm:git@git@github.com:zalando/axiom-web.git'
+                    connection 'scm:git@git@github.com:zalando/axiom-web.git'
+                    developerConnection 'scm:git@git@github.com:zalando/axiom-web.git'
+                }
 
-               licenses {
-                   license {
-                       name 'The MIT License (MIT)'
-                       url 'https://opensource.org/licenses/MIT'
-                       distribution 'repo'
-                   }
-               }
+                licenses {
+                    license {
+                        name 'The MIT License (MIT)'
+                        url 'https://opensource.org/licenses/MIT'
+                        distribution 'repo'
+                    }
+                }
 
-               developers {
-                   developer {
-                       id 'teppel'
-                       name 'Tamas Eppel'
-                   }
-               }
-           }
+                developers {
+                    developer {
+                        id 'teppel'
+                        name 'Tamas Eppel'
+                    }
+                }
+            }
         }
     }
 }

@@ -10,8 +10,23 @@ import io.vertx.ext.web.RoutingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zalando.axiom.web.SwaggerRouter;
-import org.zalando.axiom.web.binding.functions.*;
-import org.zalando.axiom.web.handler.*;
+import org.zalando.axiom.web.binding.functions.Async;
+import org.zalando.axiom.web.binding.functions.AsyncStringConsumer;
+import org.zalando.axiom.web.binding.functions.AsyncSupplier;
+import org.zalando.axiom.web.binding.functions.unary.AsyncBooleanFunction;
+import org.zalando.axiom.web.binding.functions.unary.AsyncDateFunction;
+import org.zalando.axiom.web.binding.functions.unary.AsyncDoubleFunction;
+import org.zalando.axiom.web.binding.functions.unary.AsyncFloatFunction;
+import org.zalando.axiom.web.binding.functions.AsyncFunction;
+import org.zalando.axiom.web.binding.functions.unary.AsyncIntFunction;
+import org.zalando.axiom.web.binding.functions.unary.AsyncLongFunction;
+import org.zalando.axiom.web.binding.functions.unary.AsyncStringFunction;
+import org.zalando.axiom.web.handler.DeleteHandler;
+import org.zalando.axiom.web.handler.GetHandler;
+import org.zalando.axiom.web.handler.GetWithZeroOrOneParameterHandler;
+import org.zalando.axiom.web.handler.MetricsHandler;
+import org.zalando.axiom.web.handler.ParameterCheckHandler;
+import org.zalando.axiom.web.handler.PostHandler;
 import org.zalando.axiom.web.util.Preconditions;
 
 import java.util.Map;
@@ -43,7 +58,32 @@ public class DefaultBindingBuilder implements BindingBuilder {
         return this;
     }
 
+    public <T> DefaultBindingBuilder get(AsyncBooleanFunction<T> function) {
+        get((Async) function);
+        return this;
+    }
+
+    public <T> DefaultBindingBuilder get(AsyncDoubleFunction<T> function) {
+        get((Async) function);
+        return this;
+    }
+
+    public <T> DefaultBindingBuilder get(AsyncFloatFunction<T> function) {
+        get((Async) function);
+        return this;
+    }
+
+    public <T> DefaultBindingBuilder get(AsyncDateFunction<T> function) {
+        get((Async) function);
+        return this;
+    }
+
     public <T> DefaultBindingBuilder get(AsyncIntFunction<T> function) {
+        get((Async) function);
+        return this;
+    }
+
+    public <T> DefaultBindingBuilder get(AsyncLongFunction<T> function) {
         get((Async) function);
         return this;
     }

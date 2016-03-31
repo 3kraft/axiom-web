@@ -28,12 +28,9 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "An array of some text",
+                        "description": "Response",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            }
+                            "type": "string"
                         }
                     }
                 }
@@ -54,12 +51,9 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "An array of some text",
+                        "description": "Response",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            }
+                            "type": "string"
                         }
                     }
                 }
@@ -80,12 +74,9 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "An array of some text",
+                        "description": "Response",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            }
+                            "type": "string"
                         }
                     }
                 }
@@ -106,12 +97,9 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "An array of some text",
+                        "description": "Response",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            }
+                            "type": "string"
                         }
                     }
                 }
@@ -132,12 +120,9 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "An array of some text",
+                        "description": "Response",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            }
+                            "type": "string"
                         }
                     }
                 }
@@ -157,12 +142,32 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "An array of some text",
+                        "description": "Response",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            }
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/date-parameters": {
+            "get": {
+                "operationId": "org.zalando.axiom.web.controller.TypeController.getByDate",
+                "parameters": [
+                    {
+                        "name": "parameter",
+                        "in": "query",
+                        "description": "Parameter of the controller",
+                        "required": true,
+                        "type": "string",
+                        "format": "datetime"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Response",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }

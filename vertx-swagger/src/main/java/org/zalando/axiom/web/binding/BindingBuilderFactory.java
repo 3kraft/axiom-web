@@ -9,8 +9,8 @@ import io.vertx.ext.web.RoutingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zalando.axiom.web.SwaggerRouter;
-import org.zalando.axiom.web.binding.functions.AsyncIntFunction;
-import org.zalando.axiom.web.binding.functions.AsyncStringFunction;
+import org.zalando.axiom.web.binding.functions.unary.AsyncIntFunction;
+import org.zalando.axiom.web.binding.functions.unary.AsyncStringFunction;
 import org.zalando.axiom.web.binding.functions.AsyncSupplier;
 import org.zalando.axiom.web.util.Strings;
 
