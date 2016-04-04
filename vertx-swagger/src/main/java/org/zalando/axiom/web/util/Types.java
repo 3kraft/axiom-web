@@ -1,40 +1,56 @@
 package org.zalando.axiom.web.util;
 
-import java.text.ParsePosition;
-import java.text.SimpleDateFormat;
+import org.joda.time.Chronology;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
+import org.joda.time.DateTimeZone;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+import org.joda.time.format.DateTimeParser;
+import org.joda.time.format.DateTimeParserBucket;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Date;
 import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Optional;
-import java.util.TimeZone;
 
 public final class Types {
 
     private Types() {
     }
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(Types.class);
+
     // http://tools.ietf.org/html/rfc7231#section-7.1.1.1
-    private static final String IMF_FIX_DATE_FORMATTER = "EEE, dd MMM yyyy HH:mm:ss 'GMT'";
-    private static final String RFC_850_DATE_FORMATTER = "EEEE, dd-MMM-yy HH:mm:ss 'GMT'";
-    private static final String ASCTIME_DATE_FORMATTER = "EEE MMM d HH:mm:ss yyyy";
-    //
+    private static final String IMF_FIX_DATE_FORMAT = "EEE, dd MMM yyyy HH:mm:ss 'GMT'";
+    private static final String RFC_850_DATE_FORMAT = "EEEE, dd-MMM-yy HH:mm:ss 'GMT'";
+    private static final String ASCTIME_DATE_FORMAT = "EEE MMM d HH:mm:ss yyyy";
+
+    //http://tools.ietf.org/html/rfc3339#section-5.6
     private static final String DATE_FORMAT = "yyyy-MM-dd";
-    private static final String ZONED_DATE_TIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ssXXX";
-    private static final String ZONED_DATE_TIME_NS_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX";
+    private static final String ZONEID_DATE_TIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ssZ";
+    private static final String ZONEID_DATE_TIME_MS_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
 
-    private static final String DEFAULT_TIME_ZONE = "UTC";
-    private static final String TIMEZONE_IN_PATTERN = "T_I-P";
+    //These two are mostly useless
+    private static final String ZONENAME_DATE_TIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ssz";
+    private static final String ZONENAME_DATE_TIME_MS_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSz";
 
-    private static Map<String, String> dateTimePatterns = new LinkedHashMap<>();    //Because we must process from most specific to least specific format
+    public static final String DEFAULT_TIME_ZONE = "UTC";
+    public static final String TIMEZONE_IN_PATTERN = "T_I-P";
+
+    private static LinkedHashMap<String, String> dateTimePatterns = new LinkedHashMap<>();
 
     static {
-        dateTimePatterns.put(ZONED_DATE_TIME_NS_FORMAT, TIMEZONE_IN_PATTERN);
-        dateTimePatterns.put(ZONED_DATE_TIME_FORMAT, TIMEZONE_IN_PATTERN);
+        dateTimePatterns.put(ZONEID_DATE_TIME_MS_FORMAT, TIMEZONE_IN_PATTERN);
+        dateTimePatterns.put(ZONEID_DATE_TIME_FORMAT, TIMEZONE_IN_PATTERN);
+        dateTimePatterns.put(ZONENAME_DATE_TIME_MS_FORMAT, TIMEZONE_IN_PATTERN);
+        dateTimePatterns.put(ZONENAME_DATE_TIME_FORMAT, TIMEZONE_IN_PATTERN);
         dateTimePatterns.put(DATE_FORMAT, DEFAULT_TIME_ZONE);
 
-        dateTimePatterns.put(IMF_FIX_DATE_FORMATTER, DEFAULT_TIME_ZONE);
-        dateTimePatterns.put(RFC_850_DATE_FORMATTER, DEFAULT_TIME_ZONE);
-        dateTimePatterns.put(ASCTIME_DATE_FORMATTER, DEFAULT_TIME_ZONE);
+        dateTimePatterns.put(IMF_FIX_DATE_FORMAT, DEFAULT_TIME_ZONE);
+        dateTimePatterns.put(RFC_850_DATE_FORMAT, DEFAULT_TIME_ZONE);
+        dateTimePatterns.put(ASCTIME_DATE_FORMAT, DEFAULT_TIME_ZONE);
     }
 
     public static Object castValueToType(String value, Class<?> parameterType) {
@@ -53,21 +69,68 @@ public final class Types {
         } else if (parameterType == Date.class) {
             Preconditions.checkNotNull(value, "Cannot be null");
             Optional<Date> date = dateTimePatterns.keySet().stream()
-                    .map(pattern -> attemptConversionToDate(pattern, value.trim()))
-                    .filter(convertedDate -> convertedDate != null).findFirst();
+                    .map(pattern -> {
+                        DateTimeFormatter formatter = DateTimeFormat.forPattern(pattern);
+                        String timeZone = dateTimePatterns.get(pattern);
+                        if (!TIMEZONE_IN_PATTERN.equals(timeZone)) {
+                            formatter = formatter.withZone(DateTimeZone.forID(timeZone));
+                        }
+
+                        Optional<Date> op = tryParse(formatter, value.trim());
+                        if (op.isPresent()) {
+                            LOGGER.debug("Using {} for {}", pattern, value);
+                        }
+                        return op;
+                    })
+                    .filter(Optional::isPresent).map(matchingDate -> matchingDate.get()).findFirst();
             return date.orElseThrow(() -> new IllegalArgumentException("Date format not supported"));
         } else {
             throw new UnsupportedOperationException(String.format("Unhandled type [%s].", parameterType.getName()));
         }
     }
 
-    private static Date attemptConversionToDate(String pattern, String value) {
-        String timeZone = dateTimePatterns.get(pattern);
-        SimpleDateFormat dateFormat = new SimpleDateFormat(pattern);
-        if (!TIMEZONE_IN_PATTERN.equals(timeZone)) {
-            dateFormat.setTimeZone(TimeZone.getTimeZone(timeZone));
+    /**
+     * Copy of {@link DateTimeFormatter#parseDateTime(String)} , which returns Optional<Date> instead of throwing an exception.
+     * SimpleDateFormat cannot be used because it has issues : http://stackoverflow.com/a/7160024
+     *
+     * @param formatter
+     * @param text
+     * @return
+     */
+    private static Optional<Date> tryParse(DateTimeFormatter formatter, String text) {
+        DateTimeParser parser = formatter.getParser();
+
+        Chronology chrono = selectChronology(formatter.getChronology(), formatter.getZone());
+        DateTimeParserBucket bucket = new DateTimeParserBucket(0, chrono, formatter.getLocale(), formatter.getPivotYear(), formatter.getDefaultYear());
+        int newPos = parser.parseInto(bucket, text, 0);
+        if (newPos >= 0 && newPos >= text.length()) {
+            long millis = bucket.computeMillis(true, text);
+            if (formatter.isOffsetParsed() && bucket.getOffsetInteger() != null) {
+                int parsedOffset = bucket.getOffsetInteger();
+                DateTimeZone parsedZone = DateTimeZone.forOffsetMillis(parsedOffset);
+                chrono = chrono.withZone(parsedZone);
+            } else if (bucket.getZone() != null) {
+                chrono = chrono.withZone(bucket.getZone());
+            }
+            DateTime dt = new DateTime(millis, chrono);
+            if (formatter.getZone() != null) {
+                dt = dt.withZone(formatter.getZone());
+            }
+            return Optional.of(dt.toDate());
+        } else {
+            return Optional.empty();
         }
-        return dateFormat.parse(value, new ParsePosition(0));
+    }
+
+    private static Chronology selectChronology(Chronology configuredChrono, DateTimeZone configuredZone) {
+        Chronology defaultChrono = DateTimeUtils.getChronology(null);
+        if (configuredChrono != null) {
+            defaultChrono = configuredChrono;
+        }
+        if (configuredZone != null) {
+            defaultChrono = defaultChrono.withZone(configuredZone);
+        }
+        return defaultChrono;
     }
 
     public static Class<?> getParameterType(String type, String format) {
@@ -122,7 +185,7 @@ public final class Types {
      * Should be added from most specific to least specific.<br>
      * Formats are checked in order of insertion.
      *
-     * @param formatString
+     * @param formatString Pattern string compliant with http://joda-time.sourceforge.net/apidocs/org/joda/time/format/DateTimeFormat.html
      */
     public static final void addFormatterWithDefaultTimezone(String formatString) {
         dateTimePatterns.put(formatString, DEFAULT_TIME_ZONE);
@@ -132,19 +195,21 @@ public final class Types {
      * Should be added from most specific to least specific.<br>
      * Formats are checked in order of insertion.
      *
-     * @param formatString
+     * @param formatString Pattern string compliant with http://joda-time.sourceforge.net/apidocs/org/joda/time/format/DateTimeFormat.html
      */
     public static final void addFormatterWithTimezoneInPattern(String formatString) {
         dateTimePatterns.put(formatString, TIMEZONE_IN_PATTERN);
     }
 
     /**
-     * Timezone should be valid timezone string as per {@link TimeZone#getTimeZone} <br>
-     * Should be added from most specific to least specific.<br>
-     * Formats are checked in order of insertion.
+     * Timezone should be valid timezone string as per {@link DateTimeZone}
+     * Should be added from most specific to least specific.
+     * Formats are checked in order of insertion, after pre-configured formats
+     * <p>
+     * This method is not thread-safe.
      *
-     * @param formatString
-     * @param timeZone
+     * @param formatString Pattern string compliant with http://joda-time.sourceforge.net/apidocs/org/joda/time/format/DateTimeFormat.html
+     * @param timeZone     Timezone compliant with {@link DateTimeZone#forID(String)}
      */
     public static final void addFormatter(String formatString, String timeZone) {
         dateTimePatterns.put(formatString, timeZone);
@@ -154,10 +219,14 @@ public final class Types {
      * Should be added from most specific to least specific.<br>
      * Formats are checked in order of insertion.
      *
-     * @param formatStrings
+     * @param formatStrings Map of format strings to timezones. Preconfigured {@link #DEFAULT_TIME_ZONE} or {@link #TIMEZONE_IN_PATTERN}
      */
     public static final void setDateFormatters(LinkedHashMap<String, String> formatStrings) {
         dateTimePatterns.clear();
         dateTimePatterns.putAll(formatStrings);
+    }
+
+    public static final LinkedHashMap<String, String> getFormats() {
+        return (LinkedHashMap<String, String>) dateTimePatterns.clone();
     }
 }

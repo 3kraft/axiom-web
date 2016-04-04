@@ -137,7 +137,7 @@ public class TypesTest {
 
     @Test
     public void testLongParameter(TestContext context) {
-        Long paramValue = new Long(Integer.MAX_VALUE) + 10l;
+        Long paramValue = Integer.MAX_VALUE + 10L;
         VertxTestBuilder.tester()
                 .expectedStatusCode(200)
                 .routerFactory(() -> parameterRouter)
@@ -158,7 +158,7 @@ public class TypesTest {
 
     @Test
     public void testDoubleParameter(TestContext context) {
-        Double paramValue = new Double(Float.MAX_VALUE) + 10d;
+        Double paramValue = Float.MAX_VALUE + 10D;
         VertxTestBuilder.tester()
                 .expectedStatusCode(200)
                 .routerFactory(() -> parameterRouter)
@@ -191,12 +191,23 @@ public class TypesTest {
 
     @Test
     public void testDateParameterISODatetime(TestContext context) {
-        String dateParam = "1994-11-06T11:49:37+03:00";
+        String dateParam = "1994-11-06T11:49:37.1+03:00";
         VertxTestBuilder.tester()
                 .expectedStatusCode(200)
                 .routerFactory(() -> parameterRouter)
                 .getRequest("/v1/date-parameters?parameter=" + getURLEncodedString(dateParam))
-                .responseAssertion(getResponseTester("784111777000"))
+                .responseAssertion(getResponseTester("784111777100"))
+                .start(context, vertx);
+    }
+
+    @Test
+    public void testDateParameterISODatetimeTimezone(TestContext context) {
+        String dateParam = "1994-11-06T08:49:37.123Z";
+        VertxTestBuilder.tester()
+                .expectedStatusCode(200)
+                .routerFactory(() -> parameterRouter)
+                .getRequest("/v1/date-parameters?parameter=" + getURLEncodedString(dateParam))
+                .responseAssertion(getResponseTester("784111777123"))
                 .start(context, vertx);
     }
 
