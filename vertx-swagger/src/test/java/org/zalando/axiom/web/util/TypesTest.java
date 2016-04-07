@@ -247,7 +247,7 @@ public class TypesTest {
     @Test
     public void testDateParameterCustomType(TestContext context) {
         String datePattern = "yyyy MMM EEE d ss:mm:HH";
-        Types.addFormatterWithDefaultTimezone(datePattern);
+        Types.addFormatter(new DateFormatContainer(datePattern, DateFormatContainer.DEFAULT_TIME_ZONE, (value) -> value.length() == 23));
 
         String dateParam = "1994 Nov Sun 6 37:49:08";
         VertxTestBuilder.tester()

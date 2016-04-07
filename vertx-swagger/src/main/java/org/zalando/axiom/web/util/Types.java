@@ -1,18 +1,21 @@
 package org.zalando.axiom.web.util;
 
-import org.joda.time.Chronology;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeUtils;
-import org.joda.time.DateTimeZone;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.DateTimeParser;
-import org.joda.time.format.DateTimeParserBucket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.ResolverStyle;
+import java.time.temporal.ChronoField;
+import java.time.temporal.TemporalAccessor;
+import java.time.temporal.TemporalQueries;
+import java.util.ArrayList;
 import java.util.Date;
-import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Optional;
 
 public final class Types {
@@ -22,35 +25,34 @@ public final class Types {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Types.class);
 
+    private static List<DateFormatContainer> dateFormats = new ArrayList<>();
+
+
     // http://tools.ietf.org/html/rfc7231#section-7.1.1.1
     private static final String IMF_FIX_DATE_FORMAT = "EEE, dd MMM yyyy HH:mm:ss 'GMT'";
-    private static final String RFC_850_DATE_FORMAT = "EEEE, dd-MMM-yy HH:mm:ss 'GMT'";
     private static final String ASCTIME_DATE_FORMAT = "EEE MMM d HH:mm:ss yyyy";
+
+    private static final DateTimeFormatter RFC_850_DATE_FORMATTER;
 
     //http://tools.ietf.org/html/rfc3339#section-5.6
     private static final String DATE_FORMAT = "yyyy-MM-dd";
-    private static final String ZONEID_DATE_TIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ssZ";
-    private static final String ZONEID_DATE_TIME_MS_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
-
-    //These two are mostly useless
-    private static final String ZONENAME_DATE_TIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ssz";
-    private static final String ZONENAME_DATE_TIME_MS_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSz";
-
-    public static final String DEFAULT_TIME_ZONE = "UTC";
-    public static final String TIMEZONE_IN_PATTERN = "T_I-P";
-
-    private static LinkedHashMap<String, String> dateTimePatterns = new LinkedHashMap<>();
 
     static {
-        dateTimePatterns.put(ZONEID_DATE_TIME_MS_FORMAT, TIMEZONE_IN_PATTERN);
-        dateTimePatterns.put(ZONEID_DATE_TIME_FORMAT, TIMEZONE_IN_PATTERN);
-        dateTimePatterns.put(ZONENAME_DATE_TIME_MS_FORMAT, TIMEZONE_IN_PATTERN);
-        dateTimePatterns.put(ZONENAME_DATE_TIME_FORMAT, TIMEZONE_IN_PATTERN);
-        dateTimePatterns.put(DATE_FORMAT, DEFAULT_TIME_ZONE);
+        RFC_850_DATE_FORMATTER = new DateTimeFormatterBuilder().
+                appendPattern("EEEE, dd-MMM-")
+                .appendValueReduced(ChronoField.YEAR, 2, 2, LocalDate.of(1900, 1, 1))
+                .appendPattern(" HH:mm:ss 'GMT'")
+                .toFormatter()
+                .withResolverStyle(ResolverStyle.STRICT)
+                .withZone(ZoneId.of("UTC"));
 
-        dateTimePatterns.put(IMF_FIX_DATE_FORMAT, DEFAULT_TIME_ZONE);
-        dateTimePatterns.put(RFC_850_DATE_FORMAT, DEFAULT_TIME_ZONE);
-        dateTimePatterns.put(ASCTIME_DATE_FORMAT, DEFAULT_TIME_ZONE);
+        dateFormats.add(new DateFormatContainer(IMF_FIX_DATE_FORMAT, DateFormatContainer.DEFAULT_TIME_ZONE, value -> value.length() == 29));
+        dateFormats.add(new DateFormatContainer(ASCTIME_DATE_FORMAT, DateFormatContainer.DEFAULT_TIME_ZONE, value -> value.length() == 23));
+        dateFormats.add(new DateFormatContainer(value -> value.length() >= 30, RFC_850_DATE_FORMATTER));
+        dateFormats.add(new DateFormatContainer(value -> value.length() == 28 || value.length() == 29, DateTimeFormatter.RFC_1123_DATE_TIME));
+
+        dateFormats.add(new DateFormatContainer(DATE_FORMAT, DateFormatContainer.DEFAULT_TIME_ZONE, value -> value.length() == 10));
+        dateFormats.add(new DateFormatContainer(value -> value.length() > 20, DateTimeFormatter.ISO_ZONED_DATE_TIME));
     }
 
     public static Object castValueToType(String value, Class<?> parameterType) {
@@ -68,69 +70,39 @@ public final class Types {
             return value;
         } else if (parameterType == Date.class) {
             Preconditions.checkNotNull(value, "Cannot be null");
-            Optional<Date> date = dateTimePatterns.keySet().stream()
-                    .map(pattern -> {
-                        DateTimeFormatter formatter = DateTimeFormat.forPattern(pattern);
-                        String timeZone = dateTimePatterns.get(pattern);
-                        if (!TIMEZONE_IN_PATTERN.equals(timeZone)) {
-                            formatter = formatter.withZone(DateTimeZone.forID(timeZone));
+            Optional<Date> date = dateFormats.stream().
+                    map(dateFormatContainer -> {
+                        if (!dateFormatContainer.getQuickTest().test(value)) {
+                            LOGGER.debug("Quick test failed. Skipping {} for {}", dateFormatContainer, value);
+                            return Optional.<Date>empty();
                         }
-
-                        Optional<Date> op = tryParse(formatter, value.trim());
-                        if (op.isPresent()) {
-                            LOGGER.debug("Using {} for {}", pattern, value);
+                        try {
+                            DateTimeFormatter dtf = dateFormatContainer.getFormatter();
+                            TemporalAccessor accessor = dtf.parse(value);
+                            LocalDate ld = accessor.query(TemporalQueries.localDate());
+                            LocalTime lt = accessor.query(TemporalQueries.localTime());
+                            ZoneId zoneId = accessor.query(TemporalQueries.zone());
+                            if (zoneId == null) {
+                                zoneId = dtf.getZone();
+                            }
+                            ZonedDateTime zonedDateTime = null;
+                            if (lt == null) {
+                                zonedDateTime = ld.atStartOfDay(zoneId);
+                            } else {
+                                zonedDateTime = ZonedDateTime.of(ld, lt, zoneId);
+                            }
+                            LOGGER.debug("Using {} formatter for {}", dateFormatContainer, value);
+                            return Optional.of(Date.from(zonedDateTime.toInstant()));
+                        } catch (Exception e) {
+                            LOGGER.error("Caught error parsing {} with formatter {}. Consider changing the quickTest for better performance", value, dateFormatContainer, e);
+                            return Optional.<Date>empty();
                         }
-                        return op;
                     })
                     .filter(Optional::isPresent).map(matchingDate -> matchingDate.get()).findFirst();
             return date.orElseThrow(() -> new IllegalArgumentException("Date format not supported"));
         } else {
             throw new UnsupportedOperationException(String.format("Unhandled type [%s].", parameterType.getName()));
         }
-    }
-
-    /**
-     * Copy of {@link DateTimeFormatter#parseDateTime(String)} , which returns Optional<Date> instead of throwing an exception.
-     * SimpleDateFormat cannot be used because it has issues : http://stackoverflow.com/a/7160024
-     *
-     * @param formatter
-     * @param text
-     * @return
-     */
-    private static Optional<Date> tryParse(DateTimeFormatter formatter, String text) {
-        DateTimeParser parser = formatter.getParser();
-
-        Chronology chrono = selectChronology(formatter.getChronology(), formatter.getZone());
-        DateTimeParserBucket bucket = new DateTimeParserBucket(0, chrono, formatter.getLocale(), formatter.getPivotYear(), formatter.getDefaultYear());
-        int newPos = parser.parseInto(bucket, text, 0);
-        if (newPos >= 0 && newPos >= text.length()) {
-            long millis = bucket.computeMillis(true, text);
-            if (formatter.isOffsetParsed() && bucket.getOffsetInteger() != null) {
-                int parsedOffset = bucket.getOffsetInteger();
-                DateTimeZone parsedZone = DateTimeZone.forOffsetMillis(parsedOffset);
-                chrono = chrono.withZone(parsedZone);
-            } else if (bucket.getZone() != null) {
-                chrono = chrono.withZone(bucket.getZone());
-            }
-            DateTime dt = new DateTime(millis, chrono);
-            if (formatter.getZone() != null) {
-                dt = dt.withZone(formatter.getZone());
-            }
-            return Optional.of(dt.toDate());
-        } else {
-            return Optional.empty();
-        }
-    }
-
-    private static Chronology selectChronology(Chronology configuredChrono, DateTimeZone configuredZone) {
-        Chronology defaultChrono = DateTimeUtils.getChronology(null);
-        if (configuredChrono != null) {
-            defaultChrono = configuredChrono;
-        }
-        if (configuredZone != null) {
-            defaultChrono = defaultChrono.withZone(configuredZone);
-        }
-        return defaultChrono;
     }
 
     public static Class<?> getParameterType(String type, String format) {
@@ -182,51 +154,35 @@ public final class Types {
     }
 
     /**
-     * Should be added from most specific to least specific.<br>
-     * Formats are checked in order of insertion.
+     * Formats are checked in order of insertion.<br>
+     * User "quickTest" to reduce number of parsing exceptions thrown<br>
      *
-     * @param formatString Pattern string compliant with http://joda-time.sourceforge.net/apidocs/org/joda/time/format/DateTimeFormat.html
+     * @param format Additional formatter to parse date string.
      */
-    public static final void addFormatterWithDefaultTimezone(String formatString) {
-        dateTimePatterns.put(formatString, DEFAULT_TIME_ZONE);
+    public static void addFormatter(DateFormatContainer format) {
+        dateFormats.add(format);
     }
 
     /**
-     * Should be added from most specific to least specific.<br>
-     * Formats are checked in order of insertion.
-     *
-     * @param formatString Pattern string compliant with http://joda-time.sourceforge.net/apidocs/org/joda/time/format/DateTimeFormat.html
-     */
-    public static final void addFormatterWithTimezoneInPattern(String formatString) {
-        dateTimePatterns.put(formatString, TIMEZONE_IN_PATTERN);
-    }
-
-    /**
-     * Timezone should be valid timezone string as per {@link DateTimeZone}
-     * Should be added from most specific to least specific.
-     * Formats are checked in order of insertion, after pre-configured formats
+     * This will replace preconfigured formatters
      * <p>
-     * This method is not thread-safe.
-     *
-     * @param formatString Pattern string compliant with http://joda-time.sourceforge.net/apidocs/org/joda/time/format/DateTimeFormat.html
-     * @param timeZone     Timezone compliant with {@link DateTimeZone#forID(String)}
-     */
-    public static final void addFormatter(String formatString, String timeZone) {
-        dateTimePatterns.put(formatString, timeZone);
-    }
-
-    /**
      * Should be added from most specific to least specific.<br>
      * Formats are checked in order of insertion.
      *
-     * @param formatStrings Map of format strings to timezones. Preconfigured {@link #DEFAULT_TIME_ZONE} or {@link #TIMEZONE_IN_PATTERN}
+     * @param dateFormatters List of formatters
      */
-    public static final void setDateFormatters(LinkedHashMap<String, String> formatStrings) {
-        dateTimePatterns.clear();
-        dateTimePatterns.putAll(formatStrings);
+    public static void setDateFormatters(List<DateFormatContainer> dateFormatters) {
+        dateFormats.clear();
+        dateFormats.addAll(dateFormatters);
     }
 
-    public static final LinkedHashMap<String, String> getFormats() {
-        return (LinkedHashMap<String, String>) dateTimePatterns.clone();
+    /**
+     * This will be useful if order of preconfigured formatters is to be changed.
+     *
+     * @return Copy of date formatters
+     */
+    public static List<DateFormatContainer> getFormats() {
+        return new ArrayList<>(dateFormats);
     }
+
 }
