@@ -82,14 +82,15 @@ repositories {
     }
 }
 
+def localVertxVersion = vertxVersion ?: "3.2.1"
 dependencies {
     compile "io.swagger:swagger-models:1.5.4"
     compile "io.swagger:swagger-parser:1.0.13"
-    compile "io.vertx:vertx-web:3.1.0"
+    compile "io.vertx:vertx-web:$localVertxVersion"
     compile "com.netflix.hystrix:hystrix-core:1.4.20"
     compile "org.apache.httpcomponents:httpclient:4.5.1"
     compile "org.slf4j:slf4j-api:1.7.13"
-    compile "io.vertx:vertx-dropwizard-metrics:3.1.0"
+    compile "io.vertx:vertx-dropwizard-metrics:$localVertxVersion"
     testCompile "org.apache.logging.log4j:log4j:2.4.1"
     testCompile "org.apache.logging.log4j:log4j-api:2.4.1"
     testCompile "org.apache.logging.log4j:log4j-core:2.4.1"
@@ -98,11 +99,11 @@ dependencies {
     testCompile "org.assertj:assertj-core:3.2.0"
     testCompile "junit:junit:4.12"
     testCompile "io.swagger:swagger-parser-project:1.0.13"
-    testCompile "io.vertx:vertx-unit:3.1.0"
+    testCompile "io.vertx:vertx-unit:$localVertxVersion"
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = "2.9"
+    gradleVersion = "2.12"
 }
 
 uploadArchives {
